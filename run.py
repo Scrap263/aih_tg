@@ -176,6 +176,10 @@ async def show_hint(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f'{part_1} \nПеревод: {transl}'
     await query.edit_message_text(text)
 
+async def get_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sentence = update.message.text
+
+    
 
 def main():
 
