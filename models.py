@@ -51,9 +51,9 @@ def add_word(chat_id, en_word, p_speech, transl):
         session.add(word)
         session.commit()
 
-def add_sentance(sentance):
+def add_sentance(chat_id, sentance):
     with Session(engine) as session:
-        sent = Sentances(sentance=sentance)
+        sent = Sentances(chat_id=chat_id, sentance=sentance)
         session.add(sent)
         session.commit()
 
