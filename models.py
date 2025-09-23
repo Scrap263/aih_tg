@@ -84,8 +84,8 @@ def update_reviewed_word(chat_id, word):
         for column in columns:
             if getattr(w_t_u, column) == today:
                 setattr(w_t_u, column, 'reviewed')
+                session.commit()
                 break
-            session.commit()
 
 def forced_review(chat_id, date):
     with Session(engine) as session:
