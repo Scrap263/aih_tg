@@ -88,6 +88,7 @@ async def dict_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     w_list = ''
     today = str(datetime.today().date())
     words = find_words_for_r(chat_id, today)
+    words_for_review = []
     for i in words:
         words_for_review.append(i)
         w_list = w_list + '\n' + i['word']
@@ -208,7 +209,8 @@ async def send_next_word_f(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f'Слово: {word} ({p_s})\nВведите предложение с этим словом. Его проверит нейросеть'
         context.user_data['text'] = text
         keyboard = [[
-            InlineKeyboardButton('Подсказка', callback_data='hint')
+            InlineKeyboardButton('Подсказка', callback_data='hint'),
+            InlineKeyboardButton('Пропустить', callback_data='skip_word')
         ],
         [InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]]
         markup = InlineKeyboardMarkup(keyboard)
@@ -461,7 +463,8 @@ def main():
                 CallbackQueryHandler(send_next_word_f, pattern='^' + 'start_forced_r' + '$'),
                 CallbackQueryHandler(show_hint, pattern='^' + 'hint' + '$'),
                 CallbackQueryHandler(exit_review, pattern='^' + 'go_to_dict_menu' + '$'),
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_sentence)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_sentence),
+                CallbackQueryHandler(send_next_word_f, pattern='^' + 'skip_word' + '$')
             ],
             first_ai_answer : [
                CallbackQueryHandler(save_review, pattern='^' + 'option_1' + '$'),
