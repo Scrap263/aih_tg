@@ -11,7 +11,7 @@ from telegram.ext import (
 import json
 import os
 from dotenv import load_dotenv
-from models import find_words_for_r, update_structure, add_word, forced_review, update_reviewed_word, add_sentance
+from models import find_words_for_r, update_structure, add_word, forced_review, update_reviewed_word, add_sentance, find_user_words
 from datetime import datetime
 from deepseek import DeepSeekAPI
 import random
@@ -25,7 +25,9 @@ dict_main='main_dict'
 
 start_route, dict_maiin, get_en_word, wait_p_s, wait_translation = range(0, 5)
 wait_date, start_forced_r, first_ai_answer, wait_right_sent = range(5, 9)
-wait_ru_sentance, learn_ox_word, wait_ox_ps = range(9, 12)
+wait_ru_sentance, learn_ox_word, wait_ox_ps, wait_interm_translation = range(9, 13)
+wait_interm_sentence, wait_interm_user_translation, interm_ai_review = range(13, 16)
+wait_interm_right_sentence, wait_starter_translation, end_starter_state = range(16, 19)
 
 dict_menu_text = 'Вы в меню словаря'
 
@@ -39,7 +41,7 @@ def show_dict_menu():
         [InlineKeyboardButton('добавить слово', callback_data='add_word'),
         InlineKeyboardButton('топ нужных слов', callback_data='oxford3000')],
         [InlineKeyboardButton('Повтор по дате', callback_data='review_words'),
-        InlineKeyboardButton('Начать повторение', callback_data='start_forced_r')],
+        InlineKeyboardButton('Начать повторение', callback_data='ask_type_of_review')],
         [InlineKeyboardButton('Назад', callback_data='main_menu')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -86,6 +88,7 @@ async def dict_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     w_list = ''
     today = str(datetime.today().date())
     words = find_words_for_r(chat_id, today)
+    context.user_data.clear()
     words_for_review = []
     for i in words:
         words_for_review.append(i)
@@ -96,7 +99,7 @@ async def dict_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton('добавить слово', callback_data='add_word'),
             InlineKeyboardButton('топ нужных слов', callback_data='oxford3000'),
             InlineKeyboardButton('Повтор по дате', callback_data='review_words'),
-            InlineKeyboardButton('Начать повторение', callback_data='start_forced_r')
+            InlineKeyboardButton('Начать повторение', callback_data='ask_type_of_review')
         ]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         context.user_data['words_for_review'] = words_for_review
@@ -106,7 +109,6 @@ async def dict_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = show_dict_menu()
 
     print(text)
-    context.user_data.clear()
 
     await query.edit_message_text(text, reply_markup=reply_markup)
     return dict_maiin
@@ -183,7 +185,7 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if w_list:
         text = w_list
         keyboard = [[
-        InlineKeyboardButton('Начать повторение', callback_data='start_forced_r')
+        InlineKeyboardButton('Начать повторение', callback_data='ask_type_of_review')
         ],
         [InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]]
         markup = InlineKeyboardMarkup(keyboard)
@@ -195,6 +197,209 @@ async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = show_dict_menu()
         await update.message.reply_text(text, reply_markup=reply_markup)
         return dict_maiin
+
+async def ask_review_type(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    text = 'Бот поддерживает 3 режима повторения, которые основаны на сложности: "Легкий", "Средний" и "Продвинутый". \n\nЛегкий - нужно будет просто перевести слово.\nСредний - нужно будет перевести слово и расставить слова в правильном порядке в предложении.\nПродвинутый - самому придумать предложение со словом. \n\nВыберите желаемый вариант повторения'
+    keyboard = [
+        [InlineKeyboardButton('Легкий', callback_data='starter'),
+         InlineKeyboardButton('Средний', callback_data='interm'),
+         InlineKeyboardButton('Продвинутый', callback_data='start_forced_r')],
+        [InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')] 
+        ]
+    markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(text, reply_markup=markup)
+    return start_forced_r
+
+async def send_word_starter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    words_for_review = context.user_data['words_for_review']
+    if words_for_review:
+        messagee = words_for_review.pop(0)
+
+        word = messagee['word']
+        p_s = messagee['s_part']
+        transl = messagee['translation']
+
+        context.user_data['current_word'] = word
+        context.user_data['current_p_s'] = p_s
+        context.user_data['current_transl'] = transl
+        keyboard = [[InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu'),
+                     InlineKeyboardButton('Пропустить', callback_data='starter_skip_word')]]
+        markup = InlineKeyboardMarkup(keyboard)
+
+        text = f'Слово для повотрения: {word} ({p_s}).\n\nНапишите перевод этого слова (необязательно все, можно только то что помните)'
+        await query.edit_message_text(text, reply_markup=markup)
+        return wait_starter_translation
+    else:
+        query = update.callback_query
+        await query.answer()
+
+        markup = show_dict_menu()
+        await query.edit_message_text('Слов для повторения нет', reply_markup=markup)
+        return dict_maiin
+
+async def end_starter(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_translation = update.message.text
+    right_transl = context.user_data.pop('current_transl')
+    word =  context.user_data.pop('current_word')
+    chat_id = update.message.chat.id
+
+    if user_translation in right_transl:
+        text = f'Круто! Вы правильно перевели слово {word}. Вот все переводы этого слова: {right_transl}. \n\nХотите продолжить повторение слов?'
+    else:
+        text = f'Вы хорошо справляетесь. {word} может переводится как {right_transl}.\n\n Хотите продолжить повторение слов?'
+    update_reviewed_word(chat_id, word)
+    keyboard = [
+        [InlineKeyboardButton('Да', callback_data='next_word'),
+         InlineKeyboardButton('Нет', callback_data='redirect_to_dict_menu')]
+        ]
+    markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(text, reply_markup=markup)
+    return end_starter_state
+
+async def send_word_interm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    words_for_review = context.user_data['words_for_review']
+    if words_for_review:
+        messagee = words_for_review.pop(0)
+
+        word = messagee['word']
+        p_s = messagee['s_part']
+        transl = messagee['translation']
+
+        context.user_data['current_word'] = word
+        context.user_data['current_p_s'] = p_s
+        context.user_data['current_transl'] = transl
+        keyboard = [[InlineKeyboardButton('Пропустить', callback_data='interm_skip_word'),
+                     InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')
+                     ]]
+        markup = InlineKeyboardMarkup(keyboard)
+
+        text = f'Слово для повотрения: {word} ({p_s}).\n\nНапишите перевод этого слова (необязательно все, можно только то что помните)'
+        await query.edit_message_text(text, reply_markup=markup)
+        #send message to deepseek
+        word_with_ps = f'{word} ({p_s})'
+        w = str(word_with_ps)
+        print(w)
+        sentence = ai.come_up_with_sentence(w)
+        context.user_data['ai_sentence'] = sentence
+        sentence_words = sentence.split(sep=' ')
+        context.user_data['sentence_words_list'] = sentence_words
+        return wait_interm_translation
+    else:
+        query = update.callback_query
+        await query.answer()
+
+        markup = show_dict_menu()
+        await query.edit_message_text('Слов для повторения нет', reply_markup=markup)
+        return dict_maiin
+
+async def show_interm_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_translation = update.message.text
+    right_transl = context.user_data['current_transl']
+    word = context.user_data['current_word']
+    p_s = context.user_data['current_p_s']
+    words_list = context.user_data['sentence_words_list']
+    print(words_list)
+
+    words_text = ''
+    number = int(len(words_list))
+    print(number)
+    while number != 0:
+        r_int = random.randint(0, number-1)
+        w = words_list.pop(r_int)
+        words_text += w + ' | '
+        number -= 1
+    keyboard = [[InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]]
+    markup = InlineKeyboardMarkup(keyboard)
+    if user_translation in right_transl:
+        text = f'Круто! Вы вспомнили и правильно написали перевод слова {word} ({p_s}). Теперь двигаемся дальше. Ниже приведены слова которые нужно расположить в правильном порядке и получится предложение\n\nВот слова: [{words_text}]\nНапишите получившееся предложение'
+    else:
+        text = f'Вот как это слово переводится: {right_transl}. Теперь двигаемся дальше. Ниже приведены слова которые нужно расположить в правильном порядке и получится предложение\n\nВот слова: [{words_text}]\nНапишите получившееся предложение'
+    await update.message.reply_text(text, reply_markup=markup)
+    return wait_interm_sentence
+
+async def wait_interm_sent_translation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    sentence = update.message.text
+    context.user_data['sentence'] = sentence
+    keyboard = [
+        [InlineKeyboardButton('Исправить английское предложение', callback_data='back_to_en_sentence')]
+        [InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]]
+    markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('А теперь переведите это предложение на русский', reply_markup=markup)
+    return wait_interm_user_translation
+
+async def check_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    translation = update.message.text
+    en_sentence = context.user_data['sentence']
+    user_input = f'{en_sentence} - {translation}'
+    ai_sent = context.user_data.pop('ai_sentence')
+    await update.message.reply_text('Ваше предложение отправлено на проверку')
+    ai_checked = ai.check_interm(user_input, ai_sent)
+
+    keyboard = [
+        [InlineKeyboardButton('Все правильно', callback_data='interm_option_1')],
+        [InlineKeyboardButton('Есть ошибки в английском или и в английском и русском предложении', callback_data='interm_option_2')],
+        [InlineKeyboardButton('Есть ошибки только в русском предложении', callback_data='interm_option_1')],
+        [InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]
+    ]
+    markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(ai_checked, reply_markup=markup)
+    return interm_ai_review
+    
+async def save_interm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    sentence = context.user_data.pop('sentence')
+    word = context.user_data.pop('current_word')
+
+    chat_id = query.message.chat.id
+    print(chat_id)
+
+    update_reviewed_word(chat_id=chat_id, word=word)
+    add_sentance(chat_id, sentence)
+
+    keyboard = [
+        [InlineKeyboardButton('Да', callback_data='interm')],
+        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
+        ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text('Ваше предложение сохранено\nХотите продолжить?', reply_markup=reply_markup)
+    return start_forced_r
+
+async def interm_option_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    keyboard = [[InlineKeyboardButton('В меню словаря', callback_data='redirect_to_dict_menu')]]
+    markup = InlineKeyboardMarkup(keyboard)
+    text = f'Напишите английское предложение правильно'
+    await query.message.chat.send_message(text, reply_markup=markup)
+    return wait_interm_right_sentence
+
+async def save_interm_option_2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.message.chat.id
+    word = context.user_data.pop('current_word')
+    sentence = update.message.text
+    update_reviewed_word(chat_id=chat_id, word=word)
+    add_sentance(chat_id, sentence)
+
+    keyboard = [
+        [InlineKeyboardButton('Да', callback_data='interm')],
+        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
+        ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text('Ваше предложение сохранено\nХотите продолжить?', reply_markup=reply_markup)
+    return start_forced_r
 
 async def send_next_word_f(update: Update, context: ContextTypes.DEFAULT_TYPE):
     words_for_review = context.user_data['words_for_review']
@@ -444,6 +649,7 @@ async def add_ox_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text('вы в меню словаря', reply_markup=markup)
     return dict_maiin
 
+#Закончить
 async def search_word_in_dictionary(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -463,6 +669,7 @@ def main():
             dict_maiin : [
                 CallbackQueryHandler(ask_en_word, pattern='^' + 'add_word' + '$'),
                 CallbackQueryHandler(date_for_r, pattern='^' + 'review_words' + '$'),
+                CallbackQueryHandler(ask_review_type , pattern='^' + 'ask_type_of_review' + '$'),
                 CallbackQueryHandler(send_next_word_f, pattern='^' + 'start_forced_r' + '$'),
                 CallbackQueryHandler(get_random_words, pattern='^' + 'oxford3000' + '$'),
                 CallbackQueryHandler(return_to_start, pattern='^' + 'main_menu' + '$')
@@ -487,8 +694,11 @@ def main():
                 CallbackQueryHandler(send_next_word_f, pattern='^' + 'start_forced_r' + '$'),
                 CallbackQueryHandler(show_hint, pattern='^' + 'hint' + '$'),
                 CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$'),
+                CallbackQueryHandler(ask_review_type , pattern='^' + 'ask_type_of_review' + '$'),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, get_sentence),
-                CallbackQueryHandler(send_next_word_f, pattern='^' + 'skip_word' + '$')
+                CallbackQueryHandler(send_next_word_f, pattern='^' + 'skip_word' + '$'),
+                CallbackQueryHandler(send_word_interm , pattern='^' + 'interm' + '$'),
+                CallbackQueryHandler(send_word_starter, pattern='^' + 'starter' + '$')
             ],
             first_ai_answer : [
                CallbackQueryHandler(save_review, pattern='^' + 'option_1' + '$'),
@@ -517,6 +727,38 @@ def main():
                 CallbackQueryHandler(show_ox_examples),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, show_ox_examples),
                 CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$')
+            ],
+            wait_interm_translation : [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, show_interm_translation),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$'),
+                CallbackQueryHandler(send_word_interm, pattern='^' + 'interm_skip_word' + '$')
+            ],
+            wait_interm_sentence : [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, wait_interm_sent_translation),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$')
+            ],
+            wait_interm_user_translation : [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, check_user_input),
+                CallbackQueryHandler(show_interm_translation, pattern='^' + 'back_to_en_sentence' + '$'),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$')
+            ],
+            interm_ai_review : [
+                CallbackQueryHandler(save_interm, pattern='^' + 'interm_option_1' + '$'),
+                CallbackQueryHandler(interm_option_2, pattern='^' + 'interm_option_2' + '$'),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$')
+            ],
+            wait_interm_right_sentence : [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_interm_option_2),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$')
+            ],
+            wait_starter_translation : [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, end_starter),
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$'),
+                CallbackQueryHandler(send_word_starter, pattern='^' + 'starter_skip_word' + '$')
+            ],
+            end_starter_state : [
+                CallbackQueryHandler(dict_home, pattern='^' + 'redirect_to_dict_menu' + '$'),
+                CallbackQueryHandler(send_word_starter, pattern='^' + 'next_word' + '$')
             ]
         },
         fallbacks= [CommandHandler('start', start)]

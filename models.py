@@ -19,11 +19,11 @@ class Word(Base):
     p_speech: Mapped[str] = mapped_column(nullable=False)
     transl: Mapped[str] = mapped_column(nullable=False)
     date_created: Mapped[date] = mapped_column(Date, default=date.today())
-    r_1: Mapped[Optional[date]] = mapped_column(Date)
-    r_2: Mapped[Optional[date]] = mapped_column(Date)
-    r_3: Mapped[Optional[date]] = mapped_column(Date)
-    r_4: Mapped[Optional[date]] = mapped_column(Date)
-    r_5: Mapped[Optional[date]] = mapped_column(Date)
+    r_1: Mapped[str] = mapped_column(nullable=False)
+    r_2: Mapped[str] = mapped_column(nullable=False)
+    r_3: Mapped[str] = mapped_column(nullable=False)
+    r_4: Mapped[str] = mapped_column(nullable=False)
+    r_5: Mapped[str] = mapped_column(nullable=False)
     sentances: Mapped[list['Sentances']] = relationship(back_populates='word')
 
 
@@ -78,14 +78,15 @@ def find_words_for_r(chat_id, date):
 def update_reviewed_word(chat_id, word):
     today = str(datetime.today().date())
     columns = ['r_1', 'r_2', 'r_3', 'r_4', 'r_5']
+    print(word)
 
     with Session(engine) as session:
         w_t_u = session.query(Word).filter(Word.user_id == chat_id, Word.en_word == word).first()
         for column in columns:
             if getattr(w_t_u, column) == today:
                 setattr(w_t_u, column, 'reviewed')
-                session.commit()
                 break
+        session.commit()
 
 def forced_review(chat_id, date):
     with Session(engine) as session:
@@ -99,3 +100,12 @@ def forced_review(chat_id, date):
             w_d = {'word': w, 's_part': p_s, 'translation': trans}
             message.append(w_d)
         return message
+
+def find_user_words(chat_id):
+    with Session(engine) as session:
+        words = session.query(Word).filter(Word.user_id == chat_id).all
+        words_list = []
+        for row in words:
+            word = row.en_word
+            words_list.append(word)
+        return words_list

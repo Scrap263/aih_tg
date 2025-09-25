@@ -70,3 +70,38 @@ class DeepSeekAPI:
     def fr_help_to_write(self, r_var_sent):
         content = f"Вот предложение на русском: {r_var_sent}. Пожалуйста переведи его на французский язык грамотно. В ответе напиши просто перевод без лишних слов."
         return self.help_to_write(content)
+    
+    def come_up_with_sentence(self, word):
+        content = f'Привет! Придумай пожалуйста предложение на английском языке. В этом предложении обязательно должно быть это слово - {word}. А также ты можешь использовать любые из слов которые соответствуют уровню А1, предложения должны быть небольшими. В ответе напиши только это предложение.'
+        response = self.api.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {
+            "role": "user",
+            "content": content,
+            }
+        ],
+        max_tokens=1024,
+        temperature=1.3,
+        stream=False
+        )
+        return response.choices[0].message.content
+    
+    def check_interm(self, user_input, ai_sent):
+        content = f'Пользователю были даны слова и он должен был составить вот такое предложение - {ai_sent}. Вот как пользователь составил предложение и потом перевел его на русский: {user_input}. Проверь грамматическую правильность предложения и то привильно ли это переведено на русский. В ответе просто напиши есть ли ошибки и если да то какие'
+        response = self.api.chat.completions.create(
+        model="deepseek-chat",
+        messages=[
+            {
+            "role": "user",
+            "content": content,
+            }
+        ],
+        max_tokens=1024,
+        temperature=1.3,
+        stream=False
+        )
+        unformated = response.choices[0].message.content
+        format = unformated.replace('*', '')
+        formated = format.replace('#', '')
+        return formated
