@@ -33,7 +33,7 @@ dict_menu_text = 'Вы в меню словаря'
 
 ai = DeepSeekAPI()
 
-with open('new_dictionary.json', 'r', encoding='UTF-8') as f:
+with open('n_d.json', 'r', encoding='UTF-8') as f:
     dictionary = json.load(f)
 
 def show_dict_menu():
@@ -552,7 +552,7 @@ async def get_random_words(update: Update, context: ContextTypes.DEFAULT_TYPE):
     i = 0
     words_l = []
     while i < 5:
-        random_int = random.randint(0, 2999)
+        random_int = random.randint(0, 2800)
         w = oxford_3000_words[random_int]
         words_l.append(w)
         i += 1
