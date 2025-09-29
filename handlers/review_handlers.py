@@ -266,3 +266,4 @@ async def get_sentence(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = get_advanced_ai_keyboard()
     await update.message.reply_text(text, reply_markup=reply_markup)
     return STATES['first_ai_answer']
+

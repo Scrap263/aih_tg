@@ -85,3 +85,4 @@ def format_sentence_task(words_text):
 def format_oxford_word_info(word, transcription, part_of_speech_text):
     """Форматирует информацию о слове из Oxford"""
     return f"Слово {word} читается как - {transcription}. Внизу на кнопках написаны части речи в которых это слово может быть использовано.\n\nНажмите на кнопку, чтобы понять как это слово используется"
+

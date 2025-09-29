@@ -23,7 +23,8 @@ def create_conversation_handler():
         entry_points=[CommandHandler('start', handlers.start)],
         states={
             STATES['start_route']: [
-                CallbackQueryHandler(handlers.dict_home, pattern='^' + CALLBACK_DATA['dict_main'] + '$')
+                CallbackQueryHandler(handlers.dict_home, pattern='^' + CALLBACK_DATA['dict_main'] + '$'),
+                CallbackQueryHandler(handlers.instructions, pattern='^' + CALLBACK_DATA['instructions'] + '$')
             ],
             STATES['dict_maiin']: [
                 CallbackQueryHandler(handlers.ask_en_word, pattern='^' + CALLBACK_DATA['add_word'] + '$'),
@@ -118,6 +119,9 @@ def create_conversation_handler():
             STATES['end_starter_state']: [
                 CallbackQueryHandler(handlers.dict_home, pattern='^' + CALLBACK_DATA['redirect_to_dict_menu'] + '$'),
                 CallbackQueryHandler(handlers.send_word_starter, pattern='^' + 'next_word' + '$')
+            ],
+            STATES['instructions']: [
+                CallbackQueryHandler(handlers.go_home, pattern='^' + CALLBACK_DATA['main_m'] + '$')
             ]
         },
         fallbacks=[CommandHandler('start', handlers.start)]
@@ -145,3 +149,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

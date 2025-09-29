@@ -9,7 +9,7 @@ def get_main_menu_keyboard():
     """Главное меню"""
     keyboard = [[
         InlineKeyboardButton(text='Словарь', callback_data=CALLBACK_DATA['dict_main']),
-        InlineKeyboardButton('кнопка 2', callback_data='second')
+        InlineKeyboardButton(text='Инструкция', callback_data=CALLBACK_DATA['instructions'])
     ]]
     return InlineKeyboardMarkup(keyboard)
 
@@ -142,3 +142,8 @@ def get_forced_review_keyboard():
         [InlineKeyboardButton('В меню словаря', callback_data=CALLBACK_DATA['redirect_to_dict_menu'])]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+def get_home_button():
+    keyboard = [[InlineKeyboardButton('Домой', callback_data=CALLBACK_DATA['main_m'])]]
+    return InlineKeyboardMarkup(keyboard)
+

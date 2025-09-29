@@ -107,3 +107,4 @@ async def add_ox_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_markup = get_dict_menu_keyboard()
     await query.edit_message_text('вы в меню словаря', reply_markup=reply_markup)
     return STATES['dict_maiin']
+

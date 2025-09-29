@@ -40,3 +40,4 @@ python main.py
 2. **Новое сообщение**: Добавьте в `config.py` в словарь `MESSAGES`
 3. **Новая клавиатура**: Создайте функцию в `keyboards.py`
 4. **Новое состояние**: Добавьте в `states.py` и зарегистрируйте в ConversationHandler
+
