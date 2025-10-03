@@ -8,6 +8,8 @@ from config import MESSAGES, CALLBACK_DATA
 from states import STATES
 from models import find_words_for_r
 from utils import format_words_for_review, get_today_date
+from datetime import time
+from zoneinfo import ZoneInfo
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -18,6 +20,63 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text(text, reply_markup=reply_markup)
     return STATES['start_route']
+
+async def start_and_set_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    
+    # 1. Устанавливаем ежедневное напоминание (если еще не установлено)
+    # Вызываем set_daily_reminder, но не возвращаем его результат
+    await set_daily_reminder(update, context) 
+    
+    # 2. Вызываем основную логику старта, которая возвращает состояние
+    return await start(update, context) # <-- start должен вернуть STATES['start_route']
+
+async def send_d_r(context: ContextTypes.DEFAULT_TYPE):
+    print(context.job.data)
+    chat_id = context.job.data['chat_id']
+
+
+    if chat_id:
+
+        today = get_today_date()
+        words = find_words_for_r(chat_id, today)
+
+        if words:
+            number = len(words) + 1
+            text = f'У вас есть слова для повторения. Сегодня их: {number}. Повторите их'
+        else:
+            text = 'У вас сегодня нет слов для повторения. Время изучить новые слова!'
+
+        await context.bot.sendMessage(chat_id=chat_id, text=text)
+
+
+
+async def set_daily_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    chat_id = update.effective_chat.id
+
+    job_queue = context.job_queue or context.application.job_queue
+
+    if not job_queue:
+        # Эта ошибка должна исчезнуть после правильной инициализации в main.py
+        await update.message.reply_text("Ошибка: Планировщик задач недоступен\\.")
+        return
+
+    # 2. УБИРАЕМ 'await' перед вызовами JobQueue
+    # get_jobs_by_name - это синхронный метод JobQueue
+    current_jobs = job_queue.get_jobs_by_name(str(chat_id))
+    
+    # current_jobs - это список. Проверяем, есть ли что-то в списке.
+    if current_jobs:
+        await update.message.reply_text("Ежедневное напоминание уже установлено\\.")
+        return
+
+    target_time = time(hour=16, minute=00, tzinfo=ZoneInfo('Europe/Moscow'))
+
+    job_queue.run_daily(
+        send_d_r,
+        target_time,
+        data = {'chat_id': chat_id}
+    )
 
 
 async def instructions(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -2,7 +2,7 @@
 Пакет обработчиков для Telegram бота
 """
 
-from .start_handlers import start, return_to_start, dict_home, exit_review, instructions, go_home
+from .start_handlers import start, return_to_start, dict_home, exit_review, instructions, go_home, set_daily_reminder, start_and_set_reminder
 from .word_handlers import (
     ask_en_word, get_word, get_p_s, get_translation,
     date_for_r, get_date
@@ -29,6 +29,6 @@ __all__ = [
     'save_interm', 'send_next_word_f', 'show_hint', 'get_sentence',
     'get_random_words', 'choose_p_s', 'show_ox_examples', 'add_ox_word',
     'save_review', 'option_2', 'save_sent', 'option_3', 'show_ai_sentence',
-    'interm_option_2', 'save_interm_option_2', 'instructions', 'go_home'
+    'interm_option_2', 'save_interm_option_2', 'instructions', 'go_home', 'start_and_set_reminder', 'set_daily_reminder'
 ]
 

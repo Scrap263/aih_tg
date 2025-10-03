@@ -7,8 +7,10 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     ConversationHandler,
-    filters
+    filters,
+    JobQueue
 )
+import asyncio
 
 from config import TG_API, CALLBACK_DATA
 from states import STATES
@@ -20,7 +22,8 @@ def create_conversation_handler():
     """Создает ConversationHandler с всеми состояниями и обработчиками"""
     
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', handlers.start)],
+        entry_points=[
+            CommandHandler('start', handlers.start_and_set_reminder)],
         states={
             STATES['start_route']: [
                 CallbackQueryHandler(handlers.dict_home, pattern='^' + CALLBACK_DATA['dict_main'] + '$'),
@@ -130,23 +133,24 @@ def create_conversation_handler():
     return conv_handler
 
 
+
 def main():
     """Основная функция запуска бота"""
-    # Инициализируем базу данных
     update_structure()
     
-    # Создаем приложение бота
-    bot = Application.builder().token(TG_API).build()
+    # 1. Явно создаем JobQueue
+    my_job_queue = JobQueue()
+    
+    # 2. Передаем JobQueue в Application
+    bot = Application.builder().token(TG_API).job_queue(my_job_queue).build()
     
     # Добавляем обработчик разговоров
     conv_handler = create_conversation_handler()
     bot.add_handler(conv_handler)
-    
-    # Запускаем бота
+        
     print("Бот запущен...")
-    bot.run_polling(allowed_updates=['message', 'callback_query'])
+    bot.run_polling(allowed_updates=['message', 'callback_query', 'command'])
 
 
 if __name__ == '__main__':
     main()
-
