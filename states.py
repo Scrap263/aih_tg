@@ -8,6 +8,8 @@ wait_date, start_forced_r, first_ai_answer, wait_right_sent = range(5, 9)
 wait_ru_sentance, learn_ox_word, wait_ox_ps, wait_interm_translation = range(9, 13)
 wait_interm_sentence, wait_interm_user_translation, interm_ai_review = range(13, 16)
 wait_interm_right_sentence, wait_starter_translation, end_starter_state, instructions = range(16, 20)
+sd_home = range(20, 21)
+
 
 # Словарь состояний для удобства использования
 STATES = {
@@ -30,6 +32,7 @@ STATES = {
     'interm_ai_review': interm_ai_review,
     'wait_interm_right_sentence': wait_interm_right_sentence,
     'wait_starter_translation': wait_starter_translation,
-    'end_starter_state': end_starter_state
+    'end_starter_state': end_starter_state,
+    'sd_home': sd_home
 }
 

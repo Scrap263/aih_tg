@@ -68,7 +68,7 @@ async def date_for_r(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Получение даты и поиск слов для повторения"""
     from datetime import datetime
-    from keyboards import get_forced_review_keyboard
+    from keyboards.keyboards import get_forced_review_keyboard
     from models import forced_review
     from utils import format_words_for_review
     

@@ -9,7 +9,8 @@ def get_main_menu_keyboard():
     """Главное меню"""
     keyboard = [[
         InlineKeyboardButton(text='Словарь', callback_data=CALLBACK_DATA['dict_main']),
-        InlineKeyboardButton(text='Инструкция', callback_data=CALLBACK_DATA['instructions'])
+        InlineKeyboardButton(text='Инструкция', callback_data=CALLBACK_DATA['instructions']),
+        InlineKeyboardButton(text='Дисциплина', callback_data=CALLBACK_DATA['sd_home'])
     ]]
     return InlineKeyboardMarkup(keyboard)
 

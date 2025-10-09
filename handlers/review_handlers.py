@@ -52,7 +52,7 @@ async def send_word_starter(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
         
-        from keyboards import get_dict_menu_keyboard
+        from keyboards.keyboards import get_dict_menu_keyboard
         reply_markup = get_dict_menu_keyboard()
         await query.edit_message_text(MESSAGES['no_words_review'], reply_markup=reply_markup)
         return STATES['dict_maiin']
@@ -112,7 +112,7 @@ async def send_word_interm(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
         
-        from keyboards import get_dict_menu_keyboard
+        from keyboards.keyboards import get_dict_menu_keyboard
         reply_markup = get_dict_menu_keyboard()
         await query.edit_message_text(MESSAGES['no_words_review'], reply_markup=reply_markup)
         return STATES['dict_maiin']
@@ -221,7 +221,7 @@ async def send_next_word_f(update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query
         await query.answer()
         
-        from keyboards import get_dict_menu_keyboard
+        from keyboards.keyboards import get_dict_menu_keyboard
         reply_markup = get_dict_menu_keyboard()
         await query.edit_message_text(MESSAGES['no_words_review'], reply_markup=reply_markup)
         return STATES['dict_maiin']

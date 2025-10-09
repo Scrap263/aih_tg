@@ -21,7 +21,8 @@ CALLBACK_DATA = {
     'ask_type_of_review': 'ask_type_of_review',
     'main_menu': 'main_menu',
     'redirect_to_dict_menu': 'redirect_to_dict_menu',
-    'main_m' : 'main_m'
+    'main_m' : 'main_m',
+    'sd_home': 'sd_home'
 }
 
 # Текстовые сообщения
@@ -46,6 +47,14 @@ MESSAGES = {
 
 Выберите желаемый вариант повторения''',
     'oxford_words': 'Вот вам 5 рандомных слов из 3000 самых используемых английских слов. Нажмите на слово чтобы изучить его'
+}
+
+SD_MESSAGES = {
+    'sd_home': 'Вы находитесь на странице SD для структуризации вашей жизни сейчас доступны функции ниже'
+}
+
+SD_CD = {
+    'tasks': 'tasks'
 }
 
 # Файлы данных

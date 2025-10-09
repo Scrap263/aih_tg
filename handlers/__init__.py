@@ -20,6 +20,8 @@ from .ai_handlers import (
     interm_option_2, save_interm_option_2
 )
 
+from sd_home_handlers import (sd_home)
+
 __all__ = [
     'start', 'return_to_start', 'dict_home', 'exit_review',
     'ask_en_word', 'get_word', 'get_p_s', 'get_translation',
@@ -29,6 +31,7 @@ __all__ = [
     'save_interm', 'send_next_word_f', 'show_hint', 'get_sentence',
     'get_random_words', 'choose_p_s', 'show_ox_examples', 'add_ox_word',
     'save_review', 'option_2', 'save_sent', 'option_3', 'show_ai_sentence',
-    'interm_option_2', 'save_interm_option_2', 'instructions', 'go_home', 'start_and_set_reminder', 'set_daily_reminder'
+    'interm_option_2', 'save_interm_option_2', 'instructions', 'go_home', 'start_and_set_reminder', 'set_daily_reminder',
+    'sd_home'
 ]
 

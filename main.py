@@ -27,7 +27,8 @@ def create_conversation_handler():
         states={
             STATES['start_route']: [
                 CallbackQueryHandler(handlers.dict_home, pattern='^' + CALLBACK_DATA['dict_main'] + '$'),
-                CallbackQueryHandler(handlers.instructions, pattern='^' + CALLBACK_DATA['instructions'] + '$')
+                CallbackQueryHandler(handlers.instructions, pattern='^' + CALLBACK_DATA['instructions'] + '$'),
+                CallbackQueryHandler(handlers.sd_home, pattern="^" + CALLBACK_DATA['sd_home'] + '$')
             ],
             STATES['dict_maiin']: [
                 CallbackQueryHandler(handlers.ask_en_word, pattern='^' + CALLBACK_DATA['add_word'] + '$'),
@@ -125,6 +126,9 @@ def create_conversation_handler():
             ],
             STATES['instructions']: [
                 CallbackQueryHandler(handlers.go_home, pattern='^' + CALLBACK_DATA['main_m'] + '$')
+            ],
+            STATES['sd_home'] : [
+                CallbackQueryHandler(handlers)
             ]
         },
         fallbacks=[CommandHandler('start', handlers.start)]
