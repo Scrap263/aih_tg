@@ -22,7 +22,8 @@ CALLBACK_DATA = {
     'main_menu': 'main_menu',
     'redirect_to_dict_menu': 'redirect_to_dict_menu',
     'main_m' : 'main_m',
-    'sd_home': 'sd_home'
+    'sd_home': 'sd_home',
+    'tasks': 'tasks'
 }
 
 # Текстовые сообщения
@@ -50,11 +51,136 @@ MESSAGES = {
 }
 
 SD_MESSAGES = {
-    'sd_home': 'Вы находитесь на странице SD для структуризации вашей жизни сейчас доступны функции ниже'
+    'sd_home': 'Вы находитесь на странице SD для структуризации вашей жизни сейчас доступны функции ниже',
+    'tasks_w': 'Выберите действие ниже',
+    # Питание
+    'nutrition_home': '🍽️ Управление питанием\n\nЗдесь вы можете отслеживать свои приёмы пищи, устанавливать цели и правила питания.',
+    'add_meal': '🍽️ Добавление приёма пищи\n\nВыберите действие:',
+    'add_dish': '➕ Добавление нового блюда\n\nВведите название блюда:',
+    'wait_dish_calories': 'Введите количество калорий на 100 грамм:',
+    'wait_dish_protein': 'Введите количество белка на 100 грамм (в граммах):',
+    'wait_dish_grams': 'Введите количество грамм, которое вы съели:',
+    'find_dishes': '🔍 Поиск блюд\n\nВыберите блюдо из списка:',
+    'wait_dish_number': 'Введите номер блюда:',
+    'complete_meal': '✅ Приём пищи завершён!',
+    'nutrition_chart': '📊 График питания',
+    'nutrition_menu': '📋 Меню питания',
+    'add_rule': '➕ Добавление правила питания\n\nВведите текст правила:',
+    'wait_reminder_time': 'Введите время напоминания (например: 08:00) или нажмите "Пропустить":',
+    'wait_exceptions': 'Введите случаи исключения (когда можно не соблюдать правило) или нажмите "Пропустить":',
+    'set_goals': '🎯 Установка целей по питанию',
+    'set_calories': 'Введите дневную норму калорий:',
+    'set_protein': 'Введите дневную норму белка (в граммах):',
+    'add_note': '📝 Добавление заметки по питанию\n\nВведите текст заметки:',
+    # Рутины
+    'routines_home': '🌅🌙 Управление рутинами\n\nЗдесь вы можете настроить и выполнять утренние и вечерние рутины для структуризации дня.',
+    'morning_routine': '🌅 Утренняя рутина\n\nНачните день с правильной рутины!',
+    'evening_routine': '🌙 Вечерняя рутина\n\nЗавершите день правильно!',
+    'morning_testing': '📊 Утреннее тестирование\n\nПеред началом рутины ответьте на несколько вопросов:',
+    'sleep_hours': 'Сколько часов вы спали? (например: 7.5)',
+    'wake_up_count': 'Сколько раз вы просыпались за ночь?',
+    'health_condition': 'Оцените состояние здоровья от 1 до 10:',
+    'muscle_fatigue': 'Оцените мышечную усталость от 1 до 10:',
+    'health_complaints': 'Есть ли жалобы на здоровье? (или напишите "нет")',
+    'routine_setup': '⚙️ Настройка рутины\n\nВыберите действие:',
+    'create_routine': '➕ Создание новой рутины\n\nВведите название рутины:',
+    'routine_actions': '📝 Настройка действий\n\nВведите действия через запятую (например: "Умыться, Позавтракать, Зарядка"):',
+    'routine_created': '✅ Рутина создана успешно!',
+    'start_routine': '🚀 Начало рутины\n\nВыберите рутину для выполнения:',
+    'routine_action': '📋 Текущее действие:',
+    'routine_completed': '🎉 Рутина завершена! Отличная работа!',
+    'routines_chart': '📊 График рутин\n\nЗдесь будет отображаться статистика выполнения рутин.',
+    # Спорт
+    'sport_home': '🏃‍♂️ Управление спортом\n\nЗдесь вы можете создавать планы тренировок, вести дневник тренировок и отслеживать свои спортивные цели.',
+    'workout_plan': '📋 План тренировок\n\nСоздавайте и редактируйте планы тренировок.',
+    'workout_journal': '📝 Дневник тренировок\n\nЗаписывайте выполненные тренировки.',
+    'add_workout_plan': '➕ Добавление плана тренировки\n\nВыберите тип тренировки:',
+    'add_workout_journal': '➕ Добавление записи в дневник\n\nВыберите тип тренировки:',
+    'select_workout_type': 'Выберите тип тренировки:',
+    'wait_workout_date': 'Введите дату тренировки (YYYY-MM-DD):',
+    'wait_exercise_name': 'Введите название упражнения:',
+    'wait_sets': 'Введите количество подходов:',
+    'wait_weight': 'Введите вес (кг):',
+    'wait_reps': 'Введите количество повторений:',
+    'wait_cardio_duration': 'Введите продолжительность в минутах:',
+    'wait_cardio_distance': 'Введите расстояние в километрах:',
+    'wait_cardio_intensity': 'Введите целевую интенсивность (например: "легкая", "средняя", "высокая"):',
+    'wait_journal_duration': 'Введите продолжительность тренировки в минутах:',
+    'wait_journal_feeling': 'Оцените общее самочувствие от 1 до 10:',
+    'wait_journal_activity': 'Введите вид активности (например: "бег", "велосипед", "плавание"):',
+    'wait_journal_distance': 'Введите пройденное расстояние в километрах:',
+    'wait_journal_heart_rate': 'Введите средний пульс:',
+    'select_exercise': 'Выберите упражнение:',
+    'wait_set_weight': 'Введите вес для этого подхода (кг):',
+    'wait_set_reps': 'Введите количество повторений для этого подхода:',
+    'sport_goal': '🎯 Спортивная цель\n\nУстановите свою спортивную цель.',
+    'wait_sport_goal': 'Введите вашу спортивную цель:',
+    'workout_plan_created': '✅ План тренировки создан!',
+    'workout_journal_created': '✅ Запись в дневник добавлена!',
+    'sport_goal_set': '✅ Спортивная цель установлена!',
+    # Тест правил
+    'rules_test_home': '📋 Тест по правилам\n\nЕжедневная проверка соблюдения ваших правил.',
+    'rules_test_question': 'Все ли правила были соблюдены сегодня?',
+    'rules_test_success': '🎉 Отлично! Все правила соблюдены!',
+    'rules_test_violations': '❌ Некоторые правила были нарушены. Выберите правило для анализа:',
+    'rules_test_reason': 'Почему это правило не было соблюдено?',
+    'rules_test_exception': 'Были ли исключения из этого правила? (или напишите "нет")',
+    'rules_test_saved': '✅ Информация о нарушении сохранена!',
+    # Анализ
+    'analysis_home': '🔍 Анализ ситуаций\n\nАнализируйте произошедшие ситуации для улучшения в будущем.',
+    'analysis_create': '➕ Создать новый анализ\n\nВведите название анализа:',
+    'analysis_situation': '📝 Что произошло? Опишите ситуацию:',
+    'analysis_reason': '🤔 Почему это произошло? Опишите причины:',
+    'analysis_prevention': '💡 Как не допустить это в будущем? Опишите способы предотвращения:',
+    'analysis_created': '✅ Анализ создан и сохранен!',
+    'analysis_collection': '📚 Сборник анализов\n\nВыберите анализ для просмотра:',
+    'analysis_review': '📊 Оценка анализа\n\nПомог ли этот анализ?',
+    'analysis_helpful': '✅ Отлично! Анализ был полезен.',
+    'analysis_not_helpful': '❌ Анализ не помог. Подумаем, почему это произошло.',
+    'analysis_alternative': '💭 Напишите другой способ решения этой проблемы:',
+    'analysis_review_saved': '✅ Оценка анализа сохранена!'
 }
 
 SD_CD = {
-    'tasks': 'tasks'
+    'tasks': 'tasks',
+    'add_task': 'add_task',
+    'day': 'day',
+    'month': 'month',
+    'year': 'year',
+    'save_task': 'save_task',
+    'edit_task': 'edit_task',
+    'delete_task': 'delete_task',
+    'mark_completed': 'mark_completed',
+    # Питание
+    'nutrition': 'nutrition',
+    'add_meal': 'add_meal',
+    'add_dish': 'add_dish',
+    'find_dishes': 'find_dishes',
+    'complete_meal': 'complete_meal',
+    'nutrition_chart': 'nutrition_chart',
+    'nutrition_menu': 'nutrition_menu',
+    'add_rule': 'add_rule',
+    'set_goals': 'set_goals',
+    'set_calories': 'set_calories',
+    'set_protein': 'set_protein',
+    'add_note': 'add_note',
+    # Рутины
+    'routines': 'routines',
+    'routines_chart': 'routines_chart',
+    # Правила
+    'rules': 'rules',
+    # Спорт
+    'sport': 'sport',
+    'workout_plan': 'workout_plan',
+    'workout_journal': 'workout_journal',
+    'add_workout_plan': 'add_workout_plan',
+    'add_workout_journal': 'add_workout_journal',
+    'strength_workout': 'strength_workout',
+    'cardio_workout': 'cardio_workout',
+    'sport_goal': 'sport_goal',
+    # Тест правил
+    'rules_test': 'rules_test',
+    'analysis': 'analysis'
 }
 
 # Файлы данных

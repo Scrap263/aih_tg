@@ -42,3 +42,5 @@ python main.py
 4. **Новое состояние**: Добавьте в `states.py` и зарегистрируйте в ConversationHandler
 
 
+
+
