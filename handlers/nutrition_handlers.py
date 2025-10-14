@@ -198,8 +198,15 @@ async def complete_meal_final(update: Update, context: ContextTypes.DEFAULT_TYPE
                 text += f"🥩 {total_protein:.1f}г белка\n\n"
                 
                 if goal:
-                    calories_diff = goal.daily_calories - total_calories
-                    protein_diff = goal.daily_protein - total_protein
+                    # Получаем общее потребление за день
+                    from datetime import datetime
+                    today = datetime.now().strftime('%Y-%m-%d')
+                    daily_summary = get_nutrition_summary_by_date(query.from_user.id, today)
+                    daily_calories = daily_summary['total_calories']
+                    daily_protein = daily_summary['total_protein']
+                    
+                    calories_diff = goal.daily_calories - daily_calories
+                    protein_diff = goal.daily_protein - daily_protein
                     
                     text += f"🎯 Цели на день:\n"
                     text += f"🔥 {goal.daily_calories} ккал "
@@ -260,9 +267,9 @@ async def wait_rule_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rule_text = update.message.text
     context.user_data['rule_text'] = rule_text
     
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    from keyboards.keyboards import get_skip_reminder_keyboard
     text = SD_MESSAGES['wait_reminder_time']
-    markup = InlineKeyboardMarkup([[InlineKeyboardButton(text="Пропустить", callback_data="skip_reminder")]])
+    markup = get_skip_reminder_keyboard()
     await update.message.reply_text(text, reply_markup=markup)
     return STATES['wait_reminder_time']
 
@@ -272,7 +279,7 @@ async def wait_reminder_time(update: Update, context: ContextTypes.DEFAULT_TYPE)
     context.user_data['reminder_time'] = reminder_time
     
     text = SD_MESSAGES['wait_exceptions']
-    markup = InlineKeyboardMarkup([[InlineKeyboardButton(text="Пропустить", callback_data="skip_exceptions")]])
+    markup = get_skip_reminder_keyboard()
     await update.message.reply_text(text, reply_markup=markup)
     return STATES['wait_exceptions']
 
@@ -302,7 +309,7 @@ async def skip_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['reminder_time'] = None
     
     text = SD_MESSAGES['wait_exceptions']
-    markup = InlineKeyboardMarkup([[InlineKeyboardButton(text="Пропустить", callback_data="skip_exceptions")]])
+    markup = get_skip_reminder_keyboard()
     await query.edit_message_text(text=text, reply_markup=markup)
     return STATES['wait_exceptions']
 
@@ -344,7 +351,7 @@ async def set_calories_start(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     text = SD_MESSAGES['set_calories']
     await query.edit_message_text(text=text)
-    return STATES['set_calories']
+    return STATES['set_calories_goal']
 
 async def set_protein_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Установка цели по белку"""
@@ -353,7 +360,7 @@ async def set_protein_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = SD_MESSAGES['set_protein']
     await query.edit_message_text(text=text)
-    return STATES['set_protein']
+    return STATES['set_protein_goal']
 
 async def wait_calories_goal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка цели по калориям"""
@@ -367,6 +374,8 @@ async def wait_calories_goal(update: Update, context: ContextTypes.DEFAULT_TYPE)
             set_nutrition_goal(update.message.from_user.id, calories, goal.daily_protein)
             text = f"✅ Цель по калориям обновлена: {calories} ккал/день"
         else:
+            # Создаем новую цель с калориями и дефолтным значением белка
+            set_nutrition_goal(update.message.from_user.id, calories, 0.0)
             text = f"✅ Цель по калориям установлена: {calories} ккал/день\n\nТеперь установите цель по белку."
             markup = set_goals_kb()
             await update.message.reply_text(text, reply_markup=markup)
@@ -378,7 +387,7 @@ async def wait_calories_goal(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
     except ValueError:
         await update.message.reply_text("Пожалуйста, введите число для калорий.")
-        return STATES['set_calories']
+        return STATES['set_calories_goal']
 
 async def wait_protein_goal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработка цели по белку"""
@@ -391,6 +400,8 @@ async def wait_protein_goal(update: Update, context: ContextTypes.DEFAULT_TYPE):
             set_nutrition_goal(update.message.from_user.id, goal.daily_calories, protein)
             text = f"✅ Цель по белку обновлена: {protein}г/день"
         else:
+            # Создаем новую цель с белком и дефолтным значением калорий
+            set_nutrition_goal(update.message.from_user.id, 0.0, protein)
             text = f"✅ Цель по белку установлена: {protein}г/день\n\nТеперь установите цель по калориям."
             markup = set_goals_kb()
             await update.message.reply_text(text, reply_markup=markup)
@@ -402,7 +413,7 @@ async def wait_protein_goal(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     except ValueError:
         await update.message.reply_text("Пожалуйста, введите число для белка.")
-        return STATES['set_protein']
+        return STATES['set_protein_goal']
 
 async def add_note_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Начало добавления заметки"""
@@ -434,12 +445,11 @@ async def view_nutrition_date_start(update: Update, context: ContextTypes.DEFAUL
     text += "Введите дату в формате YYYY-MM-DD\n"
     text += "Например: 2024-01-15"
     
+    from keyboards.sd_k import nutrition_home_kb
     await query.edit_message_text(
         text=text,
         parse_mode=ParseMode.HTML,
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton('Назад', callback_data=SD_CD['nutrition'])
-        ]])
+        reply_markup=nutrition_home_kb()
     )
     return STATES['wait_nutrition_date']
 
@@ -501,12 +511,17 @@ async def wait_nutrition_date(update: Update, context: ContextTypes.DEFAULT_TYPE
             else:
                 text += f"(перебор {abs(protein_diff):.1f})\n"
     
+    from keyboards.sd_k import nutrition_home_kb
+    # Create custom keyboard for this specific case
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+    custom_keyboard = [
+        [InlineKeyboardButton('📅 Другая дата', callback_data='view_nutrition_date')],
+        [InlineKeyboardButton('Назад', callback_data=SD_CD['nutrition'])]
+    ]
+    
     await update.message.reply_text(
         text=text,
         parse_mode=ParseMode.HTML,
-        reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton('📅 Другая дата', callback_data='view_nutrition_date'),
-            InlineKeyboardButton('Назад', callback_data=SD_CD['nutrition'])
-        ]])
+        reply_markup=InlineKeyboardMarkup(custom_keyboard)
     )
     return STATES['view_nutrition_date']

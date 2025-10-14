@@ -117,8 +117,9 @@ async def morning_testing_health_complaints(update: Update, context: ContextType
     # Очищаем данные тестирования
     context.user_data.pop('morning_testing', None)
     
-    keyboard = [[InlineKeyboardButton(text='сохранить', callback_data='start_morning_routine')]]
-    markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_morning_routine_keyboard
+    markup = get_morning_routine_keyboard()
     
-    await update.message.reply_text(reply_markup=markup)
+    text = "✅ Утреннее тестирование завершено! Теперь вы можете начать рутину."
+    await update.message.reply_text(text, reply_markup=markup)
     return STATES['morning_routine']

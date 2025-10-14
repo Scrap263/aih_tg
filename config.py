@@ -138,7 +138,22 @@ SD_MESSAGES = {
     'analysis_helpful': '✅ Отлично! Анализ был полезен.',
     'analysis_not_helpful': '❌ Анализ не помог. Подумаем, почему это произошло.',
     'analysis_alternative': '💭 Напишите другой способ решения этой проблемы:',
-    'analysis_review_saved': '✅ Оценка анализа сохранена!'
+    'analysis_review_saved': '✅ Оценка анализа сохранена!',
+    # Расписание
+    'schedule_home': '📅 Управление расписанием\n\nЗдесь вы можете создавать и управлять своим расписанием событий.',
+    'schedule_view': '📅 Просмотр расписания\n\nВыберите период для просмотра:',
+    'schedule_add': '➕ Добавление события\n\nВведите название события:',
+    'schedule_manage': '⚙️ Управление событиями\n\nВыберите событие для редактирования:',
+    'wait_schedule_title': 'Введите название события:',
+    'wait_schedule_description': 'Введите описание события (или напишите "нет"):',
+    'wait_schedule_date': 'Введите дату события (YYYY-MM-DD):',
+    'wait_schedule_time': 'Введите время события (HH:MM):',
+    'schedule_event_created': '✅ Событие добавлено в расписание!',
+    'schedule_event_updated': '✅ Событие обновлено!',
+    'schedule_event_deleted': '✅ Событие удалено!',
+    'schedule_event_completed': '✅ Событие отмечено как выполненное!',
+    'no_events_today': 'На сегодня событий нет.',
+    'no_events_found': 'События не найдены.'
 }
 
 SD_CD = {
@@ -180,7 +195,14 @@ SD_CD = {
     'sport_goal': 'sport_goal',
     # Тест правил
     'rules_test': 'rules_test',
-    'analysis': 'analysis'
+    'analysis': 'analysis',
+    # Дневник
+    'diary': 'diary',
+    # Расписание
+    'schedule': 'schedule',
+    'schedule_view': 'schedule_view',
+    'schedule_add': 'schedule_add',
+    'schedule_manage': 'schedule_manage'
 }
 
 # Файлы данных

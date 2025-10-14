@@ -44,7 +44,7 @@ class Tasks(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False)
     text: Mapped[str] = mapped_column(nullable=False)
     completed: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 # Модели для питания
 class Dish(Base):
@@ -54,7 +54,8 @@ class Dish(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     calories_per_100g: Mapped[float] = mapped_column(nullable=False)
     protein_per_100g: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
+    meal_items: Mapped[list['MealItem']] = relationship(back_populates='dish')
 
 class Meal(Base):
     __tablename__ = 'meals'
@@ -65,7 +66,7 @@ class Meal(Base):
     total_calories: Mapped[float] = mapped_column(default=0.0)
     total_protein: Mapped[float] = mapped_column(default=0.0)
     is_completed: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     meal_items: Mapped[list['MealItem']] = relationship(back_populates='meal')
 
 class MealItem(Base):
@@ -77,10 +78,10 @@ class MealItem(Base):
     grams: Mapped[float] = mapped_column(nullable=False)
     calories: Mapped[float] = mapped_column(nullable=False)
     protein: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     meal: Mapped['Meal'] = relationship(back_populates='meal_items')
-    dish: Mapped['Dish'] = relationship()
+    dish: Mapped['Dish'] = relationship(back_populates='meal_items')
 
 class NutritionGoal(Base):
     __tablename__ = 'nutrition_goals'
@@ -89,8 +90,8 @@ class NutritionGoal(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False, unique=True)
     daily_calories: Mapped[float] = mapped_column(nullable=False)
     daily_protein: Mapped[float] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class NutritionRule(Base):
     __tablename__ = 'nutrition_rules'
@@ -100,7 +101,7 @@ class NutritionRule(Base):
     rule_text: Mapped[str] = mapped_column(nullable=False)
     reminder_time: Mapped[Optional[str]] = mapped_column(nullable=True)
     exceptions: Mapped[Optional[str]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class NutritionNote(Base):
     __tablename__ = 'nutrition_notes'
@@ -109,7 +110,7 @@ class NutritionNote(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False)
     note_text: Mapped[str] = mapped_column(nullable=False)
     date: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 
 def update_structure():
@@ -260,7 +261,7 @@ def set_nutrition_goal(chat_id, daily_calories, daily_protein):
         if goal:
             goal.daily_calories = daily_calories
             goal.daily_protein = daily_protein
-            goal.updated_at = datetime.now()
+            goal.updated_at = datetime.today()
         else:
             goal = NutritionGoal(
                 chat_id=chat_id,
@@ -376,7 +377,7 @@ class MorningRoutine(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     actions: Mapped[str] = mapped_column(nullable=False)  # JSON строка с последовательностью действий
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class EveningRoutine(Base):
     __tablename__ = 'evening_routines'
@@ -386,7 +387,7 @@ class EveningRoutine(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     actions: Mapped[str] = mapped_column(nullable=False)  # JSON строка с последовательностью действий
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class RoutineProgress(Base):
     __tablename__ = 'routine_progress'
@@ -398,7 +399,7 @@ class RoutineProgress(Base):
     current_action_index: Mapped[int] = mapped_column(default=0)
     is_completed: Mapped[bool] = mapped_column(default=False)
     date: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class MorningTesting(Base):
     __tablename__ = 'morning_testing'
@@ -411,7 +412,7 @@ class MorningTesting(Base):
     health_condition: Mapped[int] = mapped_column(nullable=False)  # от 1 до 10
     muscle_fatigue: Mapped[int] = mapped_column(nullable=False)  # от 1 до 10
     health_complaints: Mapped[Optional[str]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 # Модель для общих правил
 class Rule(Base):
@@ -422,8 +423,8 @@ class Rule(Base):
     rule_text: Mapped[str] = mapped_column(nullable=False)
     reminder_time: Mapped[Optional[str]] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 # Функции для работы с рутинами
 def create_morning_routine(chat_id, name, actions):
@@ -489,8 +490,7 @@ def get_routine_progress(chat_id, routine_type, date):
         progress = session.query(RoutineProgress).filter(
             RoutineProgress.chat_id == chat_id,
             RoutineProgress.routine_type == routine_type,
-            RoutineProgress.date == date,
-            RoutineProgress.is_completed == False
+            RoutineProgress.date == date
         ).first()
         return progress
 
@@ -503,6 +503,17 @@ def update_routine_progress(progress_id, current_action_index, is_completed=Fals
             session.commit()
             return True
         return False
+
+def is_routine_completed_today(chat_id, routine_type, date):
+    """Проверяет, была ли рутина завершена сегодня"""
+    with Session(engine) as session:
+        progress = session.query(RoutineProgress).filter(
+            RoutineProgress.chat_id == chat_id,
+            RoutineProgress.routine_type == routine_type,
+            RoutineProgress.date == date,
+            RoutineProgress.is_completed == True
+        ).first()
+        return progress is not None
 
 def save_morning_testing(chat_id, date, sleep_hours, wake_up_count, health_condition, muscle_fatigue, health_complaints=None):
     with Session(engine) as session:
@@ -562,7 +573,7 @@ def update_rule(rule_id, rule_text=None, reminder_time=None, is_active=None):
                 rule.reminder_time = reminder_time
             if is_active is not None:
                 rule.is_active = is_active
-            rule.updated_at = datetime.now()
+            rule.updated_at = datetime.today()
             session.commit()
             return True
         return False
@@ -581,7 +592,7 @@ def toggle_rule_status(rule_id):
         rule = session.query(Rule).filter(Rule.id == rule_id).first()
         if rule:
             rule.is_active = not rule.is_active
-            rule.updated_at = datetime.now()
+            rule.updated_at = datetime.today()
             session.commit()
             return rule.is_active
         return None
@@ -592,7 +603,7 @@ class Exercise(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class WorkoutPlan(Base):
     __tablename__ = 'workout_plans'
@@ -601,7 +612,7 @@ class WorkoutPlan(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False)
     date: Mapped[str] = mapped_column(nullable=False)
     workout_type: Mapped[str] = mapped_column(nullable=False)  # 'cardio' или 'strength'
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     # Для силовых тренировок
     strength_exercises: Mapped[list['StrengthExercise']] = relationship(back_populates='workout_plan')
@@ -618,7 +629,7 @@ class StrengthExercise(Base):
     sets: Mapped[int] = mapped_column(nullable=False)
     weight: Mapped[float] = mapped_column(nullable=False)
     reps: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     workout_plan: Mapped['WorkoutPlan'] = relationship(back_populates='strength_exercises')
     exercise: Mapped['Exercise'] = relationship()
@@ -631,7 +642,7 @@ class CardioDetails(Base):
     duration: Mapped[int] = mapped_column(nullable=False)  # в минутах
     distance: Mapped[float] = mapped_column(nullable=False)  # в километрах
     target_intensity: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     workout_plan: Mapped['WorkoutPlan'] = relationship(back_populates='cardio_details')
 
@@ -644,7 +655,7 @@ class WorkoutJournal(Base):
     workout_type: Mapped[str] = mapped_column(nullable=False)  # 'cardio' или 'strength'
     duration: Mapped[int] = mapped_column(nullable=False)  # в минутах
     overall_feeling: Mapped[int] = mapped_column(nullable=False)  # от 1 до 10
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     # Для кардио
     activity: Mapped[Optional[str]] = mapped_column(nullable=True)
@@ -662,7 +673,7 @@ class StrengthSet(Base):
     exercise_id: Mapped[int] = mapped_column(ForeignKey('exercises.id'))
     weight: Mapped[float] = mapped_column(nullable=False)
     reps: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     workout_journal: Mapped['WorkoutJournal'] = relationship(back_populates='strength_sets')
     exercise: Mapped['Exercise'] = relationship()
@@ -673,8 +684,8 @@ class SportGoal(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     chat_id: Mapped[int] = mapped_column(nullable=False, unique=True)
     goal_text: Mapped[str] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 # Функции для работы со спортом
 def add_exercise(name):
@@ -768,7 +779,7 @@ def set_sport_goal(chat_id, goal_text):
         goal = session.query(SportGoal).filter(SportGoal.chat_id == chat_id).first()
         if goal:
             goal.goal_text = goal_text
-            goal.updated_at = datetime.now()
+            goal.updated_at = datetime.today()
         else:
             goal = SportGoal(chat_id=chat_id, goal_text=goal_text)
             session.add(goal)
@@ -803,7 +814,7 @@ class RuleTest(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False)
     date: Mapped[str] = mapped_column(nullable=False)
     all_rules_followed: Mapped[bool] = mapped_column(nullable=False)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class RuleViolation(Base):
     __tablename__ = 'rule_violations'
@@ -813,7 +824,7 @@ class RuleViolation(Base):
     rule_id: Mapped[int] = mapped_column(ForeignKey('rules.id'))
     reason: Mapped[str] = mapped_column(nullable=False)
     exception: Mapped[Optional[str]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     rule_test: Mapped['RuleTest'] = relationship()
     rule: Mapped['Rule'] = relationship()
@@ -828,7 +839,7 @@ class Analysis(Base):
     situation: Mapped[str] = mapped_column(nullable=False)  # Что произошло
     reason: Mapped[str] = mapped_column(nullable=False)  # Почему это произошло
     prevention: Mapped[str] = mapped_column(nullable=False)  # Как не допустить в будущем
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
 
 class AnalysisReview(Base):
     __tablename__ = 'analysis_reviews'
@@ -838,7 +849,7 @@ class AnalysisReview(Base):
     chat_id: Mapped[int] = mapped_column(nullable=False)
     was_helpful: Mapped[bool] = mapped_column(nullable=False)
     alternative_solution: Mapped[Optional[str]] = mapped_column(nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
     
     analysis: Mapped['Analysis'] = relationship()
 
@@ -889,6 +900,15 @@ def get_rule_violation_history(rule_id, limit=10):
         ).order_by(RuleViolation.created_at.desc()).limit(limit).all()
         return violations
 
+def get_active_rules_with_reminders():
+    """Получить все активные правила с напоминаниями"""
+    with Session(engine) as session:
+        rules = session.query(Rule).filter(
+            Rule.is_active == True,
+            Rule.reminder_time.isnot(None)
+        ).all()
+        return rules
+
 # Функции для работы с анализом
 def create_analysis(chat_id, title, situation, reason, prevention):
     with Session(engine) as session:
@@ -935,3 +955,199 @@ def get_analysis_reviews(analysis_id):
             AnalysisReview.analysis_id == analysis_id
         ).all()
         return reviews
+
+def get_tasks_by_date(chat_id, date):
+    """Получить задачи пользователя за определенную дату"""
+    with Session(engine) as session:
+        tasks = session.query(Tasks).filter(
+            Tasks.chat_id == chat_id,
+            Tasks.date == date
+        ).all()
+        return tasks
+
+def get_workout_plans_by_user(chat_id):
+    """Получить все планы тренировок пользователя"""
+    with Session(engine) as session:
+        plans = session.query(WorkoutPlan).filter(
+            WorkoutPlan.chat_id == chat_id
+        ).order_by(WorkoutPlan.date.desc()).all()
+        return plans
+
+def get_strength_exercises_by_plan(workout_plan_id):
+    """Получить упражнения для силовой тренировки"""
+    with Session(engine) as session:
+        exercises = session.query(StrengthExercise).filter(
+            StrengthExercise.workout_plan_id == workout_plan_id
+        ).all()
+        return exercises
+
+def get_cardio_details_by_plan(workout_plan_id):
+    """Получить детали кардио тренировки"""
+    with Session(engine) as session:
+        cardio = session.query(CardioDetails).filter(
+            CardioDetails.workout_plan_id == workout_plan_id
+        ).first()
+        return cardio
+
+def get_workout_journal_by_user(chat_id):
+    """Получить все записи дневника тренировок пользователя"""
+    with Session(engine) as session:
+        entries = session.query(WorkoutJournal).filter(
+            WorkoutJournal.chat_id == chat_id
+        ).order_by(WorkoutJournal.date.desc()).all()
+        return entries
+
+def get_workout_statistics(chat_id):
+    """Получить статистику тренировок пользователя"""
+    with Session(engine) as session:
+        entries = session.query(WorkoutJournal).filter(
+            WorkoutJournal.chat_id == chat_id
+        ).all()
+        
+        if not entries:
+            return None
+            
+        stats = {
+            'total_workouts': len(entries),
+            'total_duration': sum(entry.duration for entry in entries if entry.duration),
+            'avg_feeling': sum(entry.overall_feeling for entry in entries if entry.overall_feeling) / len([e for e in entries if e.overall_feeling]) if entries else 0,
+            'strength_count': len([e for e in entries if e.workout_type == 'strength']),
+            'cardio_count': len([e for e in entries if e.workout_type == 'cardio'])
+        }
+        return stats
+
+# Модели для расписания
+class Schedule(Base):
+    __tablename__ = 'schedule'
+    
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    chat_id: Mapped[int] = mapped_column(nullable=False)
+    title: Mapped[str] = mapped_column(nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(nullable=True)
+    date: Mapped[str] = mapped_column(nullable=False)  # YYYY-MM-DD
+    time: Mapped[str] = mapped_column(nullable=False)  # HH:MM
+    is_completed: Mapped[bool] = mapped_column(default=False)
+    is_recurring: Mapped[bool] = mapped_column(default=False)
+    recurring_type: Mapped[Optional[str]] = mapped_column(nullable=True)  # 'daily', 'weekly', 'monthly'
+    created_at: Mapped[datetime] = mapped_column(default=datetime.today())
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.today())
+
+# Функции для работы с расписанием
+def add_schedule_event(chat_id, title, description, date, time, is_recurring=False, recurring_type=None):
+    with Session(engine) as session:
+        schedule_event = Schedule(
+            chat_id=chat_id,
+            title=title,
+            description=description,
+            date=date,
+            time=time,
+            is_recurring=is_recurring,
+            recurring_type=recurring_type
+        )
+        session.add(schedule_event)
+        session.commit()
+        return schedule_event.id
+
+def get_schedule_events_by_date(chat_id, date):
+    """Получить события расписания за конкретную дату"""
+    with Session(engine) as session:
+        events = session.query(Schedule).filter(
+            Schedule.chat_id == chat_id,
+            Schedule.date == date
+        ).order_by(Schedule.time).all()
+        return events
+
+def get_schedule_events_by_date_range(chat_id, start_date, end_date):
+    """Получить события расписания за период"""
+    with Session(engine) as session:
+        events = session.query(Schedule).filter(
+            Schedule.chat_id == chat_id,
+            Schedule.date >= start_date,
+            Schedule.date <= end_date
+        ).order_by(Schedule.date, Schedule.time).all()
+        return events
+
+def get_schedule_event_by_id(event_id, chat_id):
+    """Получить событие по ID"""
+    with Session(engine) as session:
+        event = session.query(Schedule).filter(
+            Schedule.id == event_id,
+            Schedule.chat_id == chat_id
+        ).first()
+        return event
+
+def update_schedule_event(event_id, chat_id, title=None, description=None, date=None, time=None, is_completed=None):
+    """Обновить событие расписания"""
+    with Session(engine) as session:
+        event = session.query(Schedule).filter(
+            Schedule.id == event_id,
+            Schedule.chat_id == chat_id
+        ).first()
+        
+        if event:
+            if title is not None:
+                event.title = title
+            if description is not None:
+                event.description = description
+            if date is not None:
+                event.date = date
+            if time is not None:
+                event.time = time
+            if is_completed is not None:
+                event.is_completed = is_completed
+            
+            event.updated_at = datetime.today()
+            session.commit()
+            return True
+        return False
+
+def delete_schedule_event(event_id, chat_id):
+    """Удалить событие расписания"""
+    with Session(engine) as session:
+        event = session.query(Schedule).filter(
+            Schedule.id == event_id,
+            Schedule.chat_id == chat_id
+        ).first()
+        
+        if event:
+            session.delete(event)
+            session.commit()
+            return True
+        return False
+
+def get_upcoming_events(chat_id, limit=10):
+    """Получить предстоящие события"""
+    today = date.today().strftime('%Y-%m-%d')
+    with Session(engine) as session:
+        events = session.query(Schedule).filter(
+            Schedule.chat_id == chat_id,
+            Schedule.date >= today,
+            Schedule.is_completed == False
+        ).order_by(Schedule.date, Schedule.time).limit(limit).all()
+        return events
+
+def mark_schedule_event_completed(event_id, chat_id):
+    """Отметить событие как выполненное"""
+    return update_schedule_event(event_id, chat_id, is_completed=True)
+
+def get_schedule_statistics(chat_id):
+    """Получить статистику расписания"""
+    with Session(engine) as session:
+        total_events = session.query(Schedule).filter(Schedule.chat_id == chat_id).count()
+        completed_events = session.query(Schedule).filter(
+            Schedule.chat_id == chat_id,
+            Schedule.is_completed == True
+        ).count()
+        
+        today = date.today().strftime('%Y-%m-%d')
+        today_events = session.query(Schedule).filter(
+            Schedule.chat_id == chat_id,
+            Schedule.date == today
+        ).count()
+        
+        return {
+            'total_events': total_events,
+            'completed_events': completed_events,
+            'completion_rate': (completed_events / total_events * 100) if total_events > 0 else 0,
+            'today_events': today_events
+        }

@@ -467,3 +467,20 @@ def get_analysis_back_keyboard():
     ]
     return InlineKeyboardMarkup(keyboard)
 
+# Клавиатуры для дневника
+def get_diary_menu_keyboard():
+    """Меню дневника"""
+    keyboard = [
+        [InlineKeyboardButton('📅 Просмотр по дате', callback_data='diary_date_selection')],
+        [InlineKeyboardButton('Назад', callback_data=CALLBACK_DATA['sd_home'])]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def get_diary_date_keyboard():
+    """Клавиатура для просмотра дневника по дате"""
+    keyboard = [
+        [InlineKeyboardButton('📅 Выбрать другую дату', callback_data='diary_date_selection')],
+        [InlineKeyboardButton('Назад в меню дневника', callback_data='diary_home')]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+

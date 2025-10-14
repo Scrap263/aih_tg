@@ -6,12 +6,62 @@ from telegram.ext import ContextTypes
 from telegram.constants import ParseMode
 
 from models import add_rule, get_rules, get_rule_by_id, update_rule, delete_rule, toggle_rule_status
+from datetime import time
+from zoneinfo import ZoneInfo
 from keyboards.keyboards import (
     get_rules_menu_keyboard, get_rules_list_keyboard, get_rule_detail_keyboard,
     get_edit_rule_keyboard, get_reminder_keyboard, get_confirm_delete_keyboard,
     get_skip_reminder_keyboard
 )
 from states import STATES
+
+
+async def send_rule_reminder(context: ContextTypes.DEFAULT_TYPE):
+    """Отправка напоминания о правиле"""
+    chat_id = context.job.data['chat_id']
+    rule_id = context.job.data['rule_id']
+    
+    rule = get_rule_by_id(rule_id)
+    if rule and rule.is_active:
+        text = f"⏰ <b>Напоминание о правиле</b>\n\n"
+        text += f"📝 <b>Правило:</b> {rule.rule_text}\n"
+        text += f"⏰ <b>Время:</b> {rule.reminder_time}\n\n"
+        text += "Не забудьте следовать этому правилу!"
+        
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            parse_mode=ParseMode.HTML
+        )
+
+
+async def schedule_rule_reminder(chat_id, rule_id, reminder_time, job_queue):
+    """Планирование напоминания для правила"""
+    if not reminder_time:
+        return
+    
+    try:
+        # Парсим время (формат: "08:00")
+        hour, minute = map(int, reminder_time.split(':'))
+        target_time = time(hour=hour, minute=minute, tzinfo=ZoneInfo('Europe/Moscow'))
+        
+        # Создаем уникальное имя для задачи
+        job_name = f"rule_reminder_{rule_id}_{chat_id}"
+        
+        # Удаляем существующую задачу, если есть
+        existing_jobs = job_queue.get_jobs_by_name(job_name)
+        for job in existing_jobs:
+            job.schedule_removal()
+        
+        # Создаем новую задачу
+        job_queue.run_daily(
+            send_rule_reminder,
+            target_time,
+            data={'chat_id': chat_id, 'rule_id': rule_id},
+            name=job_name
+        )
+    except Exception as e:
+        print(f"Ошибка при планировании напоминания: {e}")
 
 
 async def rules_home(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -141,6 +191,12 @@ async def add_rule_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Создаем правило
     rule_id = add_rule(chat_id, rule_text, reminder_time)
+    
+    # Планируем напоминание, если указано время
+    if reminder_time:
+        job_queue = context.job_queue or context.application.job_queue
+        if job_queue:
+            await schedule_rule_reminder(chat_id, rule_id, reminder_time, job_queue)
     
     # Очищаем контекст
     context.user_data.pop('new_rule_text', None)
@@ -369,6 +425,12 @@ async def edit_rule_reminder(update: Update, context: ContextTypes.DEFAULT_TYPE)
     success = update_rule(rule_id, reminder_time=reminder_time)
     
     if success:
+        # Планируем новое напоминание
+        job_queue = context.job_queue or context.application.job_queue
+        if job_queue:
+            chat_id = update.effective_user.id
+            await schedule_rule_reminder(chat_id, rule_id, reminder_time, job_queue)
+        
         # Очищаем контекст
         context.user_data.pop('editing_rule_id', None)
         
@@ -403,6 +465,22 @@ async def toggle_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
     new_status = toggle_rule_status(rule_id)
     
     if new_status is not None:
+        # Управляем напоминаниями в зависимости от статуса
+        job_queue = context.job_queue or context.application.job_queue
+        if job_queue:
+            chat_id = update.effective_user.id
+            if not new_status:
+                # Если правило деактивировано, отменяем напоминание
+                job_name = f"rule_reminder_{rule_id}_{chat_id}"
+                existing_jobs = job_queue.get_jobs_by_name(job_name)
+                for job in existing_jobs:
+                    job.schedule_removal()
+            else:
+                # Если правило активировано, восстанавливаем напоминание
+                rule = get_rule_by_id(rule_id)
+                if rule and rule.reminder_time:
+                    await schedule_rule_reminder(chat_id, rule_id, rule.reminder_time, job_queue)
+        
         status_text = "активно" if new_status else "неактивно"
         text = f"✅ <b>Правило теперь {status_text}!</b>"
         
@@ -461,6 +539,15 @@ async def delete_rule_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE
     success = delete_rule(rule_id)
     
     if success:
+        # Отменяем напоминание для удаленного правила
+        job_queue = context.job_queue or context.application.job_queue
+        if job_queue:
+            chat_id = update.effective_user.id
+            job_name = f"rule_reminder_{rule_id}_{chat_id}"
+            existing_jobs = job_queue.get_jobs_by_name(job_name)
+            for job in existing_jobs:
+                job.schedule_removal()
+        
         text = "✅ <b>Правило удалено!</b>\n\n"
         text += "Правило было успешно удалено из вашего списка."
         

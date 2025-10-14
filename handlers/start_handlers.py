@@ -34,18 +34,30 @@ async def send_d_r(context: ContextTypes.DEFAULT_TYPE):
     print(context.job.data)
     chat_id = context.job.data['chat_id']
 
-
     if chat_id:
-
         today = get_today_date()
         words = find_words_for_r(chat_id, today)
-
+        
+        # Получаем события на сегодня
+        from models import get_schedule_events_by_date
+        events = get_schedule_events_by_date(chat_id, today)
+        
+        text_parts = []
+        
         if words:
             number = len(words) + 1
-            text = f'У вас есть слова для повторения. Сегодня их: {number}. Повторите их'
-        else:
-            text = 'У вас сегодня нет слов для повторения. Время изучить новые слова!'
-
+            text_parts.append(f'📚 У вас есть слова для повторения. Сегодня их: {number}. Повторите их')
+        
+        if events:
+            text_parts.append(f'📅 У вас {len(events)} событий на сегодня:')
+            for event in events:
+                status = "✅" if event.is_completed else "⭕"
+                text_parts.append(f'  {status} {event.time} - {event.title}')
+        
+        if not text_parts:
+            text_parts.append('📅 На сегодня у вас нет запланированных дел. Отличный день для отдыха!')
+        
+        text = '\n\n'.join(text_parts)
         await context.bot.sendMessage(chat_id=chat_id, text=text)
 
 

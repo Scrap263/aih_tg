@@ -186,12 +186,8 @@ async def save_interm(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_reviewed_word(chat_id=chat_id, word=word)
     add_sentance(chat_id, sentence)
 
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    keyboard = [
-        [InlineKeyboardButton('Да', callback_data='interm')],
-        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_continue_keyboard
+    reply_markup = get_continue_keyboard()
     
     await query.edit_message_text(MESSAGES['sentence_saved'], reply_markup=reply_markup)
     return STATES['start_forced_r']
@@ -237,14 +233,8 @@ async def show_hint(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = f'{part_1} \nПеревод: {transl}'
     
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    from config import CALLBACK_DATA
-    
-    keyboard = [
-        [InlineKeyboardButton('Пропустить', callback_data='skip_word')],
-        [InlineKeyboardButton('В меню словаря', callback_data=CALLBACK_DATA['redirect_to_dict_menu'])]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_advanced_word_keyboard
+    reply_markup = get_advanced_word_keyboard()
     
     await query.edit_message_text(text, reply_markup=reply_markup)
     return STATES['start_forced_r']

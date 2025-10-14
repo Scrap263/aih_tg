@@ -22,12 +22,8 @@ async def save_review(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_reviewed_word(chat_id=chat_id, word=word)
     add_sentance(chat_id, sentence)
 
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    keyboard = [
-        [InlineKeyboardButton('Да', callback_data='start_forced_r')],
-        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_continue_keyboard
+    reply_markup = get_continue_keyboard()
     
     await query.edit_message_text(MESSAGES['sentence_saved'], reply_markup=reply_markup)
     return STATES['start_forced_r']
@@ -53,12 +49,8 @@ async def save_sent(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_reviewed_word(chat_id=chat_id, word=word)
     add_sentance(chat_id, sentence)
     
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    keyboard = [
-        [InlineKeyboardButton('Да', callback_data='start_forced_r')],
-        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_continue_keyboard
+    reply_markup = get_continue_keyboard()
     
     await update.message.reply_text(MESSAGES['sentence_saved'], reply_markup=reply_markup)
     return STATES['start_forced_r']
@@ -111,12 +103,8 @@ async def save_interm_option_2(update: Update, context: ContextTypes.DEFAULT_TYP
     update_reviewed_word(chat_id=chat_id, word=word)
     add_sentance(chat_id, sentence)
 
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-    keyboard = [
-        [InlineKeyboardButton('Да', callback_data='interm')],
-        [InlineKeyboardButton('Выход', callback_data='redirect_to_dict_menu')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    from keyboards.keyboards import get_continue_keyboard
+    reply_markup = get_continue_keyboard()
     
     await update.message.reply_text(MESSAGES['sentence_saved'], reply_markup=reply_markup)
     return STATES['start_forced_r']

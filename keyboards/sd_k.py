@@ -2,19 +2,18 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from config import SD_CD, CALLBACK_DATA
 
 def sd_home_kb():
-    keyboard = [
-        [InlineKeyboardButton(text='Задачи', callback_data=SD_CD['tasks'])],
-        [InlineKeyboardButton(text='Питание', callback_data=SD_CD['nutrition'])],
-        [InlineKeyboardButton(text='🌅🌙 Рутины', callback_data=SD_CD['routines'])],
-        [InlineKeyboardButton(text='📋 Правила', callback_data=SD_CD['rules'])],
-        [InlineKeyboardButton(text='🏃‍♂️ Спорт', callback_data=SD_CD['sport'])],
-        [InlineKeyboardButton(text='📋 Тест правил', callback_data=SD_CD['rules_test'])],
-        [InlineKeyboardButton(text='🔍 Анализ', callback_data=SD_CD['analysis'])],
-        [InlineKeyboardButton(text='📊 График', callback_data=SD_CD['routines_chart'])],
-        [InlineKeyboardButton(text='День', callback_data=SD_CD['day'])],
-        [InlineKeyboardButton(text='Месяц', callback_data=SD_CD['month'])],
-        [InlineKeyboardButton(text='Год', callback_data=SD_CD['year'])],
-        [InlineKeyboardButton(text='Назад', callback_data=CALLBACK_DATA['main_m'])]
+    keyboard = [[
+        InlineKeyboardButton(text='Задачи', callback_data=SD_CD['tasks']),
+        InlineKeyboardButton(text='Питание', callback_data=SD_CD['nutrition']),
+        InlineKeyboardButton(text='🌅🌙 Рутины', callback_data=SD_CD['routines'])],
+        [InlineKeyboardButton(text='📋 Правила', callback_data=SD_CD['rules']),
+        InlineKeyboardButton(text='🏃‍♂️ Спорт', callback_data=SD_CD['sport']),
+        InlineKeyboardButton(text='📖 Дневник', callback_data=SD_CD['diary'])],
+        [InlineKeyboardButton(text='📅 Расписание', callback_data=SD_CD['schedule']),
+        InlineKeyboardButton(text='📋 Тест правил', callback_data=SD_CD['rules_test']),
+        InlineKeyboardButton(text='🔍 Анализ', callback_data=SD_CD['analysis'])],
+        [InlineKeyboardButton(text='📊 График', callback_data=SD_CD['routines_chart']),
+        InlineKeyboardButton(text='Назад', callback_data=CALLBACK_DATA['main_m'])]
     ]
 
     return InlineKeyboardMarkup(keyboard)
@@ -38,10 +37,10 @@ def edit_unsaved_task_kb():
     return InlineKeyboardMarkup(keyboard)
 
 def task_management_kb(task_id):
-    keyboard = [
-        [InlineKeyboardButton(text='✅ Отметить выполненной', callback_data=f'mark_completed_{task_id}')],
-        [InlineKeyboardButton(text='✏️ Редактировать', callback_data=f'edit_task_{task_id}')],
-        [InlineKeyboardButton(text='🗑️ Удалить', callback_data=f'delete_task_{task_id}')],
+    keyboard = [[
+        InlineKeyboardButton(text='✅ Отметить выполненной', callback_data=f'mark_completed_{task_id}'),
+        InlineKeyboardButton(text='✏️ Редактировать', callback_data=f'edit_task_{task_id}'),
+        InlineKeyboardButton(text='🗑️ Удалить', callback_data=f'delete_task_{task_id}')],
         [InlineKeyboardButton(text='Назад к задачам', callback_data=CALLBACK_DATA['tasks'])]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -126,4 +125,59 @@ def meal_summary_kb():
         [InlineKeyboardButton(text='➕ Добавить ещё блюдо', callback_data=SD_CD['add_dish'])],
         [InlineKeyboardButton(text='Назад к приёму пищи', callback_data=SD_CD['add_meal'])]
     ]
+    return InlineKeyboardMarkup(keyboard)
+
+# Клавиатуры для расписания
+def schedule_home_kb():
+    keyboard = [
+        [InlineKeyboardButton(text='📅 Просмотр расписания', callback_data=SD_CD['schedule_view'])],
+        [InlineKeyboardButton(text='➕ Добавить событие', callback_data=SD_CD['schedule_add'])],
+        [InlineKeyboardButton(text='⚙️ Управление событиями', callback_data=SD_CD['schedule_manage'])],
+        [InlineKeyboardButton(text='Назад', callback_data=CALLBACK_DATA['sd_home'])]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def schedule_view_kb():
+    keyboard = [
+        [InlineKeyboardButton(text='📅 Сегодня', callback_data='schedule_today')],
+        [InlineKeyboardButton(text='📅 Завтра', callback_data='schedule_tomorrow')],
+        [InlineKeyboardButton(text='📅 Эта неделя', callback_data='schedule_week')],
+        [InlineKeyboardButton(text='📅 Этот месяц', callback_data='schedule_month')],
+        [InlineKeyboardButton(text='📅 Предстоящие', callback_data='schedule_upcoming')],
+        [InlineKeyboardButton(text='Назад', callback_data=SD_CD['schedule'])]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def schedule_events_list_kb(events):
+    """Клавиатура со списком событий"""
+    keyboard = []
+    for event in events:
+        status = "✅" if event.is_completed else "⭕"
+        keyboard.append([InlineKeyboardButton(
+            text=f"{status} {event.time} - {event.title[:25]}{'...' if len(event.title) > 25 else ''}", 
+            callback_data=f'schedule_event_{event.id}'
+        )])
+    keyboard.append([InlineKeyboardButton(text='Назад', callback_data=SD_CD['schedule_view'])])
+    return InlineKeyboardMarkup(keyboard)
+
+def schedule_event_management_kb(event_id):
+    """Клавиатура управления событием"""
+    keyboard = [
+        [InlineKeyboardButton(text='✅ Отметить выполненным', callback_data=f'schedule_complete_{event_id}'),
+         InlineKeyboardButton(text='✏️ Редактировать', callback_data=f'schedule_edit_{event_id}')],
+        [InlineKeyboardButton(text='🗑️ Удалить', callback_data=f'schedule_delete_{event_id}')],
+        [InlineKeyboardButton(text='Назад к расписанию', callback_data=SD_CD['schedule_view'])]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+def schedule_manage_events_kb(events):
+    """Клавиатура управления всеми событиями"""
+    keyboard = []
+    for event in events:
+        status = "✅" if event.is_completed else "⭕"
+        keyboard.append([InlineKeyboardButton(
+            text=f"{status} {event.date} {event.time} - {event.title[:20]}{'...' if len(event.title) > 20 else ''}", 
+            callback_data=f'schedule_manage_{event.id}'
+        )])
+    keyboard.append([InlineKeyboardButton(text='Назад', callback_data=SD_CD['schedule'])])
     return InlineKeyboardMarkup(keyboard)

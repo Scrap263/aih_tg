@@ -548,3 +548,85 @@ async def wait_sport_goal(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await message.reply_text(text=message_text, reply_markup=keyboard)
     
     return STATES['sport_goal']
+
+
+async def view_workout_plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Просмотр планов тренировок"""
+    query = update.callback_query
+    await query.answer()
+    
+    chat_id = query.from_user.id
+    
+    # Получаем планы тренировок пользователя
+    from models import get_workout_plans_by_user
+    workout_plans = get_workout_plans_by_user(chat_id)
+    
+    if not workout_plans:
+        message_text = "📋 Ваши планы тренировок:\n\nУ вас пока нет созданных планов тренировок."
+    else:
+        message_text = "📋 Ваши планы тренировок:\n\n"
+        for plan in workout_plans[-10:]:  # Показываем последние 10 планов
+            message_text += f"📅 {plan.date} - {plan.workout_type.title()}\n"
+            if plan.workout_type == 'strength':
+                # Получаем упражнения для силовой тренировки
+                from models import get_strength_exercises_by_plan
+                exercises = get_strength_exercises_by_plan(plan.id)
+                for exercise in exercises:
+                    message_text += f"  💪 {exercise.exercise.name}: {exercise.sets} x {exercise.reps} @ {exercise.weight}кг\n"
+            elif plan.workout_type == 'cardio':
+                # Получаем детали кардио
+                from models import get_cardio_details_by_plan
+                cardio = get_cardio_details_by_plan(plan.id)
+                if cardio:
+                    message_text += f"  🏃‍♂️ {cardio.duration} мин, {cardio.distance} км, {cardio.target_intensity}\n"
+            message_text += "\n"
+    
+    keyboard = get_workout_plan_keyboard()
+    
+    await query.edit_message_text(text=message_text, reply_markup=keyboard)
+    return STATES['workout_plan']
+
+
+async def sport_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Статистика тренировок"""
+    query = update.callback_query
+    await query.answer()
+    
+    chat_id = query.from_user.id
+    
+    # Получаем статистику тренировок
+    from models import get_workout_journal_by_user, get_workout_statistics
+    journal_entries = get_workout_journal_by_user(chat_id)
+    stats = get_workout_statistics(chat_id)
+    
+    if not journal_entries:
+        message_text = "📊 Статистика тренировок:\n\nУ вас пока нет записей в дневнике тренировок."
+    else:
+        message_text = "📊 Статистика тренировок:\n\n"
+        
+        # Общая статистика
+        total_workouts = len(journal_entries)
+        total_duration = sum(entry.duration for entry in journal_entries if entry.duration)
+        avg_feeling = sum(entry.overall_feeling for entry in journal_entries if entry.overall_feeling) / len([e for e in journal_entries if e.overall_feeling])
+        
+        message_text += f"📈 Общая статистика:\n"
+        message_text += f"• Всего тренировок: {total_workouts}\n"
+        message_text += f"• Общее время: {total_duration} минут\n"
+        message_text += f"• Среднее самочувствие: {avg_feeling:.1f}/10\n\n"
+        
+        # Статистика по типам тренировок
+        strength_count = len([e for e in journal_entries if e.workout_type == 'strength'])
+        cardio_count = len([e for e in journal_entries if e.workout_type == 'cardio'])
+        
+        message_text += f"💪 Силовые тренировки: {strength_count}\n"
+        message_text += f"🏃‍♂️ Кардио тренировки: {cardio_count}\n\n"
+        
+        # Последние тренировки
+        message_text += f"📅 Последние тренировки:\n"
+        for entry in journal_entries[-5:]:  # Последние 5 тренировок
+            message_text += f"• {entry.date}: {entry.workout_type.title()} ({entry.duration} мин, самочувствие: {entry.overall_feeling}/10)\n"
+    
+    keyboard = get_workout_journal_keyboard()
+    
+    await query.edit_message_text(text=message_text, reply_markup=keyboard)
+    return STATES['workout_journal']

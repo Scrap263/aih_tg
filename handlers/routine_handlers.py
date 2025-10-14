@@ -15,7 +15,7 @@ from states import STATES
 from models import (
     get_morning_routines, get_evening_routines, create_morning_routine, create_evening_routine,
     get_routine_by_id, create_routine_progress, get_routine_progress, update_routine_progress,
-    save_morning_testing, get_morning_testing
+    save_morning_testing, get_morning_testing, is_routine_completed_today
 )
 
 
@@ -84,8 +84,14 @@ async def start_morning_routine(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_text(text=text, reply_markup=markup)
             return STATES['morning_routine']
         
+        # Проверяем, есть ли уже завершенные рутины на сегодня
+        completed_today = is_routine_completed_today(chat_id, 'morning', today)
+        if completed_today:
+            text = "✅ Утреннее тестирование уже пройдено сегодня!\n\nВыберите рутину для выполнения:"
+        else:
+            text = SD_MESSAGES['start_routine']
+        
         markup = get_routines_list_keyboard(routines, 'morning')
-        text = SD_MESSAGES['start_routine']
         await query.edit_message_text(text=text, reply_markup=markup)
         return STATES['select_morning_routine']
 
@@ -240,6 +246,12 @@ async def select_morning_routine(update: Update, context: ContextTypes.DEFAULT_T
     else:
         progress_id = progress.id
         current_index = progress.current_action_index
+        # Если рутина уже завершена, показываем сообщение
+        if progress.is_completed:
+            text = "Эта рутина уже выполнена на сегодня!"
+            markup = get_morning_routine_keyboard()
+            await query.edit_message_text(text=text, reply_markup=markup)
+            return STATES['morning_routine']
     
     # Сохраняем данные в контекст
     context.user_data['routine_progress'] = {
@@ -295,6 +307,12 @@ async def select_evening_routine(update: Update, context: ContextTypes.DEFAULT_T
     else:
         progress_id = progress.id
         current_index = progress.current_action_index
+        # Если рутина уже завершена, показываем сообщение
+        if progress.is_completed:
+            text = "Эта рутина уже выполнена на сегодня!"
+            markup = get_evening_routine_keyboard()
+            await query.edit_message_text(text=text, reply_markup=markup)
+            return STATES['evening_routine']
     
     # Сохраняем данные в контекст
     context.user_data['routine_progress'] = {
@@ -337,6 +355,12 @@ async def routine_action_completed(update: Update, context: ContextTypes.DEFAULT
     
     # Получаем рутину
     routine = get_routine_by_id(progress_data['routine_type'], progress_data['routine_id'])
+    if not routine:
+        text = "Ошибка: рутина не найдена."
+        markup = get_routines_menu_keyboard()
+        await query.edit_message_text(text=text, reply_markup=markup)
+        return STATES['routines_home']
+    
     actions = json.loads(routine.actions)
     
     # Переходим к следующему действию
@@ -381,6 +405,12 @@ async def skip_routine_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Получаем рутину
     routine = get_routine_by_id(progress_data['routine_type'], progress_data['routine_id'])
+    if not routine:
+        text = "Ошибка: рутина не найдена."
+        markup = get_routines_menu_keyboard()
+        await query.edit_message_text(text=text, reply_markup=markup)
+        return STATES['routines_home']
+    
     actions = json.loads(routine.actions)
     
     # Переходим к следующему действию
@@ -445,3 +475,53 @@ async def routines_chart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await query.edit_message_text(text=text, reply_markup=markup)
     return STATES['routines_home']
+
+
+async def view_morning_routines(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Просмотр утренних рутин"""
+    query = update.callback_query
+    await query.answer()
+    
+    chat_id = query.from_user.id
+    routines = get_morning_routines(chat_id)
+    
+    if not routines:
+        text = "У вас нет настроенных утренних рутин."
+        markup = get_morning_routine_keyboard()
+    else:
+        text = "📋 Ваши утренние рутины:\n\n"
+        for i, routine in enumerate(routines, 1):
+            actions = json.loads(routine.actions)
+            text += f"{i}. {routine.name}\n"
+            text += f"   Действий: {len(actions)}\n"
+            text += f"   Создана: {routine.created_at.strftime('%d.%m.%Y')}\n\n"
+        
+        markup = get_morning_routine_keyboard()
+    
+    await query.edit_message_text(text=text, reply_markup=markup)
+    return STATES['morning_routine']
+
+
+async def view_evening_routines(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Просмотр вечерних рутин"""
+    query = update.callback_query
+    await query.answer()
+    
+    chat_id = query.from_user.id
+    routines = get_evening_routines(chat_id)
+    
+    if not routines:
+        text = "У вас нет настроенных вечерних рутин."
+        markup = get_evening_routine_keyboard()
+    else:
+        text = "📋 Ваши вечерние рутины:\n\n"
+        for i, routine in enumerate(routines, 1):
+            actions = json.loads(routine.actions)
+            text += f"{i}. {routine.name}\n"
+            text += f"   Действий: {len(actions)}\n"
+            text += f"   Создана: {routine.created_at.strftime('%d.%m.%Y')}\n\n"
+        
+        markup = get_evening_routine_keyboard()
+    
+    await query.edit_message_text(text=text, reply_markup=markup)
+    return STATES['evening_routine']

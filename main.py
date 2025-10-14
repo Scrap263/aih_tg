@@ -14,10 +14,27 @@ import asyncio
 
 from config import TG_API, CALLBACK_DATA, SD_CD
 from states import STATES
-from models import update_structure
+from models import update_structure, get_active_rules_with_reminders
 import handlers
 import handlers.rules_test_handlers as rules_test_handlers
 import handlers.analysis_handlers as analysis_handlers
+import handlers.schedule_handlers as schedule_handlers
+
+
+async def initialize_rule_reminders(application):
+    """Инициализация напоминаний для существующих правил при запуске бота"""
+    try:
+        from handlers.rules_handlers import schedule_rule_reminder
+        
+        rules = get_active_rules_with_reminders()
+        job_queue = application.job_queue
+        
+        for rule in rules:
+            await schedule_rule_reminder(rule.chat_id, rule.id, rule.reminder_time, job_queue)
+        
+        print(f"Инициализировано {len(rules)} напоминаний для правил")
+    except Exception as e:
+        print(f"Ошибка при инициализации напоминаний: {e}")
 
 
 def create_conversation_handler():
@@ -134,7 +151,10 @@ def create_conversation_handler():
                 CallbackQueryHandler(handlers.nutrition_home, pattern='^' + SD_CD['nutrition'] + '$'),
                 CallbackQueryHandler(handlers.routines_home, pattern='^' + SD_CD['routines'] + '$'),
                 CallbackQueryHandler(handlers.rules_home, pattern='^' + SD_CD['rules'] + '$'),
+                CallbackQueryHandler(rules_test_handlers.rules_test_home, pattern='^' + SD_CD['rules_test'] + '$'),
                 CallbackQueryHandler(handlers.sport_home, pattern='^' + SD_CD['sport'] + '$'),
+                CallbackQueryHandler(handlers.diary_home, pattern='^' + SD_CD['diary'] + '$'),
+                CallbackQueryHandler(schedule_handlers.schedule_home, pattern='^' + SD_CD['schedule'] + '$'),
                 CallbackQueryHandler(handlers.routines_chart, pattern='^' + SD_CD['routines_chart'] + '$'),
                 CallbackQueryHandler(handlers.day_view, pattern='^' + SD_CD['day'] + '$'),
                 CallbackQueryHandler(handlers.month_view, pattern='^' + SD_CD['month'] + '$'),
@@ -151,6 +171,7 @@ def create_conversation_handler():
                 CallbackQueryHandler(handlers.show_task_detail, pattern='^task_detail_'),
                 CallbackQueryHandler(handlers.mark_task_completed, pattern='^mark_completed_'),
                 CallbackQueryHandler(handlers.delete_task, pattern='^delete_task_'),
+                CallbackQueryHandler(handlers.edit_task_start, pattern='^edit_task_'),
                 CallbackQueryHandler(handlers.tasks_w, pattern='^' + SD_CD['tasks'] + '$')
             ],
             STATES['add_task']: [
@@ -158,6 +179,9 @@ def create_conversation_handler():
             ],
             STATES['wait_date_for_task']: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.approve_task)
+            ],
+            STATES['edit_task_text']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.edit_task_text)
             ],
             # Состояния для питания
             STATES['nutrition_home']: [
@@ -214,10 +238,10 @@ def create_conversation_handler():
                 CallbackQueryHandler(handlers.set_protein_start, pattern='^' + SD_CD['set_protein'] + '$'),
                 CallbackQueryHandler(handlers.nutrition_menu, pattern='^' + SD_CD['nutrition_menu'] + '$')
             ],
-            STATES['set_calories']: [
+            STATES['set_calories_goal']: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.wait_calories_goal)
             ],
-            STATES['set_protein']: [
+            STATES['set_protein_goal']: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.wait_protein_goal)
             ],
             STATES['wait_note_text']: [
@@ -241,11 +265,13 @@ def create_conversation_handler():
             STATES['morning_routine']: [
                 CallbackQueryHandler(handlers.start_morning_routine, pattern='^start_morning_routine$'),
                 CallbackQueryHandler(handlers.setup_morning_routine, pattern='^setup_morning_routine$'),
+                CallbackQueryHandler(handlers.view_morning_routines, pattern='^my_morning_routines$'),
                 CallbackQueryHandler(handlers.routines_home, pattern='^routines_menu$')
             ],
             STATES['evening_routine']: [
                 CallbackQueryHandler(handlers.start_evening_routine, pattern='^start_evening_routine$'),
                 CallbackQueryHandler(handlers.setup_evening_routine, pattern='^setup_evening_routine$'),
+                CallbackQueryHandler(handlers.view_evening_routines, pattern='^my_evening_routines$'),
                 CallbackQueryHandler(handlers.routines_home, pattern='^routines_menu$')
             ],
             STATES['setup_morning_routine']: [
@@ -313,8 +339,10 @@ def create_conversation_handler():
             ],
             STATES['edit_rule']: [
                 CallbackQueryHandler(handlers.edit_rule_start, pattern='^edit_rule_'),
+                CallbackQueryHandler(handlers.edit_rule_text_start, pattern='^edit_text_'),
+                CallbackQueryHandler(handlers.edit_rule_reminder_start, pattern='^edit_reminder_'),
                 CallbackQueryHandler(handlers.delete_rule_start, pattern='^delete_rule_'),
-                CallbackQueryHandler(handlers.edit_rule_reminder_start, pattern='^set_reminder_'),
+                CallbackQueryHandler(handlers.toggle_rule, pattern='^toggle_rule_'),
                 CallbackQueryHandler(handlers.view_rules, pattern='^view_rules$')
             ],
             STATES['edit_rule_text']: [
@@ -338,10 +366,12 @@ def create_conversation_handler():
             ],
             STATES['workout_plan']: [
                 CallbackQueryHandler(handlers.add_workout_plan_start, pattern='^add_workout_plan$'),
+                CallbackQueryHandler(handlers.view_workout_plans, pattern='^view_workout_plans$'),
                 CallbackQueryHandler(handlers.sport_home, pattern='^sport_home$')
             ],
             STATES['workout_journal']: [
                 CallbackQueryHandler(handlers.add_workout_journal_start, pattern='^add_workout_journal$'),
+                CallbackQueryHandler(handlers.sport_statistics, pattern='^sport_statistics$'),
                 CallbackQueryHandler(handlers.sport_home, pattern='^sport_home$')
             ],
             STATES['select_workout_type']: [
@@ -470,6 +500,58 @@ def create_conversation_handler():
                 CallbackQueryHandler(analysis_handlers.analysis_not_helpful, pattern='^analysis_not_helpful_'),
                 CallbackQueryHandler(analysis_handlers.analysis_back, pattern='^analysis_home$'),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, analysis_handlers.analysis_alternative_received)
+            ],
+            # Состояния для дневника
+            STATES['diary_home']: [
+                CallbackQueryHandler(handlers.diary_date_selection, pattern='^diary_date_selection$'),
+                CallbackQueryHandler(handlers.sd_home, pattern='^' + CALLBACK_DATA['sd_home'] + '$')
+            ],
+            STATES['wait_diary_date']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.wait_diary_date)
+            ],
+            STATES['diary_view']: [
+                CallbackQueryHandler(handlers.diary_date_selection, pattern='^diary_date_selection$'),
+                CallbackQueryHandler(handlers.diary_back_to_menu, pattern='^diary_home$')
+            ],
+            # Состояния для расписания
+            STATES['schedule_home']: [
+                CallbackQueryHandler(schedule_handlers.schedule_view_menu, pattern='^' + SD_CD['schedule_view'] + '$'),
+                CallbackQueryHandler(schedule_handlers.schedule_add_start, pattern='^' + SD_CD['schedule_add'] + '$'),
+                CallbackQueryHandler(schedule_handlers.schedule_manage_start, pattern='^' + SD_CD['schedule_manage'] + '$'),
+                CallbackQueryHandler(handlers.sd_home, pattern='^' + CALLBACK_DATA['sd_home'] + '$')
+            ],
+            STATES['schedule_view']: [
+                CallbackQueryHandler(schedule_handlers.schedule_view_today, pattern='^schedule_today$'),
+                CallbackQueryHandler(schedule_handlers.schedule_view_tomorrow, pattern='^schedule_tomorrow$'),
+                CallbackQueryHandler(schedule_handlers.schedule_view_week, pattern='^schedule_week$'),
+                CallbackQueryHandler(schedule_handlers.schedule_view_month, pattern='^schedule_month$'),
+                CallbackQueryHandler(schedule_handlers.schedule_view_upcoming, pattern='^schedule_upcoming$'),
+                CallbackQueryHandler(schedule_handlers.schedule_home, pattern='^' + SD_CD['schedule'] + '$')
+            ],
+            STATES['schedule_add']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_wait_title)
+            ],
+            STATES['wait_schedule_title']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_wait_title)
+            ],
+            STATES['wait_schedule_description']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_wait_description)
+            ],
+            STATES['wait_schedule_date']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_wait_date)
+            ],
+            STATES['wait_schedule_time']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_wait_time)
+            ],
+            STATES['schedule_manage']: [
+                CallbackQueryHandler(schedule_handlers.schedule_event_detail, pattern='^schedule_manage_'),
+                CallbackQueryHandler(schedule_handlers.schedule_mark_completed, pattern='^schedule_complete_'),
+                CallbackQueryHandler(schedule_handlers.schedule_edit_start, pattern='^schedule_edit_'),
+                CallbackQueryHandler(schedule_handlers.schedule_delete_event, pattern='^schedule_delete_'),
+                CallbackQueryHandler(schedule_handlers.schedule_home, pattern='^' + SD_CD['schedule'] + '$')
+            ],
+            STATES['schedule_edit']: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, schedule_handlers.schedule_edit_title)
             ]
         },
         fallbacks=[CommandHandler('start', handlers.start)]
@@ -489,6 +571,9 @@ def main():
     # Добавляем обработчик разговоров
     conv_handler = create_conversation_handler()
     bot.add_handler(conv_handler)
+    
+    # Инициализируем напоминания для правил
+    bot.run_async(initialize_rule_reminders(bot))
         
     print("Бот запущен...")
     bot.run_polling(allowed_updates=['message', 'callback_query', 'command'])

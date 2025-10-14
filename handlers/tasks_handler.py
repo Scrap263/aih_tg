@@ -3,14 +3,13 @@
 """
 from telegram import Update
 from telegram.ext import ContextTypes
-from keyboards import tasks_w_kb
+from keyboards.sd_k import tasks_w_kb, edit_unsaved_task_kb, task_management_kb, tasks_list_kb
 from config import SD_MESSAGES, SD_CD, CALLBACK_DATA
 from states import STATES
 from models import Tasks
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from datetime import datetime, date
-from keyboards.sd_k import edit_unsaved_task_kb, task_management_kb, tasks_list_kb
 
 
 async def tasks_w(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,9 +42,22 @@ async def wait_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def approve_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Сохранение задачи в базу данных"""
     task_date = update.message.text
-    task_text = context.user_data.pop('task_text')
+    task_text = context.user_data.get('task_text', '')
+    
+    if not task_text:
+        text = "Ошибка: текст задачи не найден. Попробуйте добавить задачу заново."
+        markup = tasks_w_kb()
+        await update.message.reply_text(text, reply_markup=markup)
+        return STATES['tasks_w']
 
     try:
+        # Проверяем формат даты (базовая проверка)
+        if len(task_date) != 10 or task_date.count('-') != 2:
+            text = "Ошибка: неверный формат даты. Используйте формат YYYY-MM-DD (например: 2024-01-15)"
+            markup = tasks_w_kb()
+            await update.message.reply_text(text, reply_markup=markup)
+            return STATES['tasks_w']
+        
         # Создаем сессию для работы с базой данных
         engine = create_engine('sqlite:///test.db')
         with Session(engine) as session:
@@ -233,7 +245,14 @@ async def show_task_detail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     
     # Извлекаем ID задачи из callback_data
-    task_id = int(query.data.split('_')[-1])
+    try:
+        task_id = int(query.data.split('_')[-1])
+    except (ValueError, IndexError):
+        text = "Ошибка: неверный ID задачи."
+        markup = tasks_w_kb()
+        await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+    
     chat_id = query.message.chat.id
     
     try:
@@ -272,7 +291,14 @@ async def mark_task_completed(update: Update, context: ContextTypes.DEFAULT_TYPE
     query = update.callback_query
     await query.answer()
     
-    task_id = int(query.data.split('_')[-1])
+    try:
+        task_id = int(query.data.split('_')[-1])
+    except (ValueError, IndexError):
+        text = "Ошибка: неверный ID задачи."
+        markup = tasks_w_kb()
+        await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+    
     chat_id = query.message.chat.id
     
     try:
@@ -307,7 +333,14 @@ async def delete_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    task_id = int(query.data.split('_')[-1])
+    try:
+        task_id = int(query.data.split('_')[-1])
+    except (ValueError, IndexError):
+        text = "Ошибка: неверный ID задачи."
+        markup = tasks_w_kb()
+        await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+    
     chat_id = query.message.chat.id
     
     try:
@@ -334,4 +367,85 @@ async def delete_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = f"Ошибка при удалении задачи: {str(e)}"
         markup = tasks_w_kb()
         await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+
+
+async def edit_task_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Начать редактирование задачи"""
+    query = update.callback_query
+    await query.answer()
+    
+    try:
+        task_id = int(query.data.split('_')[-1])
+    except (ValueError, IndexError):
+        text = "Ошибка: неверный ID задачи."
+        markup = tasks_w_kb()
+        await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+    
+    chat_id = query.message.chat.id
+    
+    try:
+        engine = create_engine('sqlite:///test.db')
+        with Session(engine) as session:
+            task = session.query(Tasks).filter(
+                Tasks.id == task_id,
+                Tasks.chat_id == chat_id
+            ).first()
+            
+        if task:
+            # Сохраняем ID задачи для редактирования
+            context.user_data['editing_task_id'] = task_id
+            text = f"Редактирование задачи:\n\nТекущий текст: {task.text}\n\nВведите новый текст задачи:"
+            await query.edit_message_text(text)
+            return STATES['edit_task_text']
+        else:
+            text = "Задача не найдена."
+            markup = tasks_w_kb()
+            await query.edit_message_text(text, reply_markup=markup)
+            return STATES['tasks_w']
+            
+    except Exception as e:
+        text = f"Ошибка при получении задачи: {str(e)}"
+        markup = tasks_w_kb()
+        await query.edit_message_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+
+
+async def edit_task_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Сохранить отредактированный текст задачи"""
+    new_text = update.message.text
+    task_id = context.user_data.get('editing_task_id')
+    
+    if not task_id:
+        text = "Ошибка: ID задачи для редактирования не найден."
+        markup = tasks_w_kb()
+        await update.message.reply_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+    
+    try:
+        engine = create_engine('sqlite:///test.db')
+        with Session(engine) as session:
+            task = session.query(Tasks).filter(
+                Tasks.id == task_id,
+                Tasks.chat_id == update.effective_chat.id
+            ).first()
+            
+            if task:
+                task.text = new_text
+                session.commit()
+                text = f"Задача успешно отредактирована!\n\nНовый текст: {new_text}"
+            else:
+                text = "Задача не найдена."
+                
+        # Очищаем временные данные
+        context.user_data.pop('editing_task_id', None)
+        markup = tasks_w_kb()
+        await update.message.reply_text(text, reply_markup=markup)
+        return STATES['tasks_w']
+        
+    except Exception as e:
+        text = f"Ошибка при редактировании задачи: {str(e)}"
+        markup = tasks_w_kb()
+        await update.message.reply_text(text, reply_markup=markup)
         return STATES['tasks_w']
